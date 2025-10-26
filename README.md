@@ -74,6 +74,9 @@ python manage.py migrate
 python manage.py collectstatic
 ```
 
+**❗ Create user profiles and Set Role accordingly [Student,Faculty]**
+**User with Role "Faculty" can only Host Groups**
+
 ```bash
 # Create superuser (admin)
 python manage.py createsuperuser
