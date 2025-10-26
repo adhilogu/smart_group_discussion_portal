@@ -8,7 +8,6 @@ Dockerfile
 render.yaml
 CHANGELOG.md
 LICENSE.md
-env.sample
 package-lock.json
 package.json
 Procfile
