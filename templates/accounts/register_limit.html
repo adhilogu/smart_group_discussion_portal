@@ -1,0 +1,33 @@
+{% extends "layouts/base-auth.html" %}
+{% load static %}
+
+{% block title %}Registration Limit Reached{% endblock title %}
+
+{% block content %}
+<div class="auth-main" style="background-image: url('{% static 'newicons/bg-img.webp' %}'); background-size: cover; background-position: center center; background-repeat: no-repeat; background-attachment: fixed; overflow-x: hidden; width: 100%; max-width: 100vw; left: 0; right: 0; margin: 0 auto;">
+  <div class="auth-wrapper v1">
+    <div class="auth-form">
+      <div class="position-relative my-5">
+        <div class="card mb-0">
+          <div class="card-body text-center p-4">
+            <div class="mb-4">
+              <img src="{% static 'newicons/bitlogo_dark.png' %}" alt="img" style="width: 180px; height: 90px;">
+            </div>
+            
+            <div class="alert alert-warning" role="alert">
+              <h4 class="alert-heading">Registration Limit Reached</h4>
+              <p>{{ message }}</p>
+              <hr>
+              <p class="mb-0">Please try again in a new browser session or contact the administrator for assistance.</p>
+            </div>
+            
+            <div class="mt-4">
+              <a href="{% url 'login' %}" class="btn btn-primary">Go to Login</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,3498 @@
+<!DOCTYPE html>
+{% load i18n static admin_datta %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_direction as direction %}
+{% get_admin_setting as admin_setting %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<html lang="en">
+  <head>
+
+    <title>{% block title %} Room Page {% endblock title %} </title>
+
+    <link rel="canonical" href="https://app-generator.dev/product/datta-able/django/" />
+
+    {% include "includes/head.html" %}
+    {% block extrastyle %}{% endblock extrastyle %}
+    {% block extrahead %}{% endblock extrahead %}
+
+  </head>
+
+
+
+{% block content %}
+{% csrf_token %}
+<div class="container py-4">
+
+       <div class="row">
+    <!-- LEFT SIDE: Event Information Card -->
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0 rounded-3 mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0">
+                    <i class="feather icon-info me-2"></i>Session Information
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <!-- Top row with event info -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <!-- Event Image -->
+                            {% if slot.event.event_photo %}
+                            <img src="{{ slot.event.event_photo.url }}" alt="{{ slot.event.event_name }}" class="rounded me-3" style="width: 90px; height: 70px; object-fit: cover;">
+                            {% else %}
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                <i class="feather icon-award text-primary" style="font-size: 24px;"></i>
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <h3 class="mb-1 fw-bold">{{ slot_group.event.event_name }}</h3>
+                                <h6 class="fw-bold">Level {{ slot_group.level.level }} - {{ slot_group.level.name }}</h6>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="row h-100">
+                            <div class="col-6">
+                                <div class="bg-light rounded p-3 h-100">
+                                    <div class="d-flex">
+                                        <div class="rounded-circle bg-info d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; min-width: 36px;">
+                                            <i class="feather icon-hash text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-muted">Slot ID</div>
+                                            <div class="h5 mb-0 fw-bold">{{ slot.slot_id }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="bg-light rounded p-3 h-100">
+                                    <div class="d-flex">
+                                        <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; min-width: 36px;">
+                                            <i class="feather icon-users text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-muted">Group</div>
+                                            <div class="h5 mb-0 fw-bold">{{ participant.group_name }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Info and Group Members in same row -->
+            <div class="row mb-3">
+                <!-- Current User Info -->
+                <div class="col-md-6">
+                    <div class="bg-light rounded p-3 h-100 d-flex align-items-center justify-content-center">
+                        <div class="d-flex align-items-center">
+                            {% if user_profile.photo %}
+                            <img src="{{ user_profile.photo.url }}" alt="{{ user_profile.name }}" class="rounded-circle me-3" style="width: 55px; height: 55px; object-fit: cover;">
+                            {% else %}
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                <i class="feather icon-user text-primary" style="font-size: 22px;"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h5 class="fw-bold mb-0">Hi, {{ user_profile.name }}!</h5>
+                                <h6 class="fw-bold text-muted">{% if user_profile.roll_number %}{{user_profile.roll_number}}{% else %}{{user_profile.staff_id}}{% endif %}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group Members Button -->
+                <div class="col-md-6">
+                    <div class="bg-light rounded p-3 h-100 d-flex align-items-center justify-content-center gap-3">
+                        <button class="btn btn-dark px-2 py-1" type="button" onclick="toggleGroupMembers()">
+                            <i class="feather icon-users me-1" style="font-size: 1rem;"></i><span style="font-size: 1rem;">Group Members</span>
+                        </button>
+                        <button type="button" id="showNotesButton" class="btn btn-primary px-2 py-1">
+                            <i class="feather icon-file-text me-1" style="font-size: 1rem;"></i><span style="font-size: 1rem;">Notes</span>
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <!-- HTML for the popup -->
+                <div id="groupMembersPopup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 0 20px rgba(0,0,0,0.3);">
+                        <!-- Scrollable content -->
+                        <div class=" text-white p-3 rounded-top d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold m-0"><i class="feather icon-users me-2"></i>Group Members ({{ group_members|length }})</h5>
+                        </div>
+                        <div style="max-height: 300px; overflow-y: auto; padding: 15px;">
+                            {% for member in group_members %}
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee;">
+                                <div style="display: flex; align-items: center;">
+                                    {% if member.user.photo %}
+                                    <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px; object-fit: cover;">
+                                    {% else %}
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                                        <i class="feather icon-user text-secondary" style="font-size: 18px;"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="text-black fw-bold" style="font-size: 15px;margin-bottom: 3px;">{{ member.user.name }}</div>
+                                        <div style="font-size: 12px; color: #666;">{{ member.user.roll_number }}</div>
+                                    </div>
+                                </div>
+                                <div style="background: #28a745; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">
+                                    <i class="feather icon-check" style="font-size: 10px; margin-right: 3px;"></i>Present
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Close button -->
+                        <div style="padding: 10px; text-align: center; border-top: 1px solid #eee;">
+                            <button onclick="toggleGroupMembers()" style="background: #6c757d; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: Question Card -->
+    <div class="col-md-5 mb-4 mb-md-0">
+        <div class="card shadow-sm border-0 rounded-3 mb-4" style="height: 300px;">
+            <div class="card-header bg-warning text-white py-3">
+                <h5 class="mb-0">
+                    <i class="feather icon-file-text me-2"></i>Your Topic
+                </h5>
+            </div>
+            <div class="card-body p-4 d-flex flex-column justify-content-center" style="overflow: hidden;">
+                {% if assigned_topic %}
+                <div class="bg-light border-start border-warning border-3 rounded p-4" style="overflow-y: auto; max-height: 350px;">
+                    <h4 class="text-black fw-bold">{{ assigned_topic }}</h4>
+                </div>
+                {% else %}
+                <div class="bg-light border-start border-warning border-3 rounded p-4 text-center">
+                    <i class="feather icon-clock" style="font-size: 32px;"></i>
+                    <p class="text-muted mb-0">Question not found yet. Please wait for the instructor to assign a topic.</p>
+                </div>
+                {% endif %}
+
+
+
+
+            </div>
+        </div>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- Add this modal to the bottom of your room_page.html file, right before the closing body tag -->
+<div class="modal" id="notesModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="feather icon-edit-3 me-2"></i>My Notes
+        </h5>
+        <button type="button" class="btn-close" id="closeNotesModal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Simple rich text controls -->
+        <div class="btn-toolbar mb-3" role="toolbar">
+          <div class="btn-group me-2" role="group">
+            <button type="button" class="btn btn-outline-secondary" id="boldButton">
+              <i class="feather icon-bold"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="italicButton">
+              <i class="feather icon-italic"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="underlineButton">
+              <i class="feather icon-underline"></i>
+            </button>
+          </div>
+          <div class="btn-group me-2" role="group">
+            <button type="button" class="btn btn-outline-secondary" id="bulletListButton">
+              <i class="feather icon-list"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="numberListButton">
+              <i class="feather icon-list-ordered"></i>
+            </button>
+          </div>
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" id="checkboxButton">
+              <i class="feather icon-check-square"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Editable content area with minimum height -->
+        <div id="notesContent" contenteditable="true" class="form-control"
+             style="min-height: 250px; height: auto; overflow-y: auto; border: 1px solid #ced4da;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-danger me-auto" id="clearNotesButton">
+          <i class="feather icon-trash-2 me-1"></i>Clear Notes
+        </button>
+          <button type="button" class="btn btn-outline-primary" id="downloadPdfButton">
+            <i class="feather icon-download me-1"></i>Download PDF
+          </button>
+        <button type="button" class="btn btn-primary" id="saveNotesButton">Save Notes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+  {% if participant.voting_progress.results_published and participant.voting_status == 'finished' %}
+<!-- Results published state -->
+<div class="container">
+  <div id="resultsContainer" class="row justify-content-center align-items-center">
+    <div class="col-lg-8 col-md-10 col-12 mx-auto">
+      <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-5 text-center">
+          <!-- Results content -->
+          <div class="mb-4">
+            {% if participant.user_rank <= 3 %}
+            <!-- Top 3 winner icon -->
+            <div class="display-1 mb-3 text-warning text-center">
+              <i class="bi bi-trophy-fill"></i>
+            </div>
+            {% else %}
+            <!-- Standard completion icon -->
+            <div class="display-1 mb-3 text-primary text-center">
+              <i class="bi bi-emoji-laughing-fill"></i>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Results heading -->
+          <h3 class="mb-4 text-primary text-center">Results Announced!</h3>
+
+          <!-- User's own result -->
+          {% if participant.user_rank and participant.user_rank <= voting_parameters.max_ranks %}
+          <!-- User placed in top rankings -->
+          <div class="mb-4 text-center">
+            {% if participant.user_rank == 1 %}
+            <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+            <p class="mb-0 h5">You secured <span class="text-warning fw-bold">1st Place</span> with {{ participant.mark }} points!</p>
+
+            {% elif participant.user_rank == 2 %}
+            <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+            <p class="mb-0 h5">You secured <span class="text-secondary fw-bold">2nd Place</span> with {{ participant.mark }} points!</p>
+
+            {% elif participant.user_rank == 3 %}
+            <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+            <p class="mb-0 h5">You secured <span class="text-copper fw-bold">3rd Place</span> with {{ participant.mark }} points!</p>
+
+            {% elif participant.user_rank <= voting_parameters.max_ranks %}
+            <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+            <p class="mb-0 h5">You secured <span class="text-primary fw-bold">{{ participant.user_rank }}{% if participant.user_rank == 1 %}st{% elif participant.user_rank == 2 %}nd{% elif participant.user_rank == 3 %}rd{% else %}th{% endif %} Place</span> with {{ participant.mark }} points!</p>
+
+            {% endif %}
+          </div>
+          {% else %}
+          <!-- User did not place in top rankings -->
+          <div class="mb-4 text-center">
+            <h4 class="mb-2 text-secondary">Better luck next time!</h4>
+            <p class="mb-0 h5">You earned {{ participant.mark }} points.</p>
+          </div>
+          {% endif %}
+
+          <!-- Group Rankings Table -->
+          <div class="mt-5">
+            <h4 class="mb-3 text-primary text-center">Group Rankings</h4>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr class="text-center">
+                    <th class="text-center">Rank</th>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for member in ranked_members %}
+                  {% if forloop.counter <= voting_parameters.max_ranks %}
+                  <tr {% if member.id == participant.id %}class="table-primary"{% endif %}>
+                    <td class="text-center">
+                      <div class="d-flex align-items-center justify-content-center">
+                        {% if forloop.counter == 1 %}
+                        <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                          <i class="feather icon-award text-white"></i>
+                        </div>
+                        {% elif forloop.counter == 2 %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                          <i class="feather icon-award text-white"></i>
+                        </div>
+                        {% elif forloop.counter == 3 %}
+                        <div class="rounded-circle bg-copper d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                          <i class="feather icon-award text-white"></i>
+                        </div>
+                        {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                          <span class="fw-bold">{{ forloop.counter }}</span>
+                        </div>
+                        {% endif %}
+                        <span>{{ forloop.counter }}{% if forloop.counter == 1 %}st{% elif forloop.counter == 2 %}nd{% elif forloop.counter == 3 %}rd{% else %}th{% endif %}</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div class="d-flex align-items-center justify-content-center">
+                        {% if member.user.photo %}
+                        <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                        {% else %}
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                          <i class="feather icon-user text-secondary"></i>
+                        </div>
+                        {% endif %}
+                        <span>{{ member.user.name }}</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span class="fw-bold">{{ member.mark }}</span>
+                    </td>
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-5 pt-3">
+            <a href="{% url 'my_slots_page' %}" class="btn btn-primary btn-lg">
+              <i class="feather icon-external-link me-2"></i>Exit to Slots Page
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif participant.voting_status == 'finished' %}
+<!-- Waiting for results state -->
+<div class="container">
+  <div id="waitingContainer" class="row justify-content-center align-items-center">
+    <div class="col-lg-8 col-md-10 col-12 mx-auto">
+      <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body p-5 text-center">
+          <div class="mb-4">
+            <img src="{% static 'newicons/waiting.gif' %}" alt="Waiting for Results" style="width: 100px; height: 100px;">
+          </div>
+          <h3 class="mb-3 text-primary">Voting Completed!</h3>
+          <p class="mb-4 text-muted">Wait for the instructor to publish the results...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% elif not group_voting_in_progress %}
+<!-- Start Speaking Section (when voting not started) -->
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-3 mb-4 bg-opacity-10">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-3">
+                        <img src="{% static 'newicons/discussion.gif' %}" alt="Ready to Speak" style="width: 300px;height:200px">
+                    </div>
+                    <h5 class="mb-3">Start Speaking</h5>
+
+                    <p id="requestStatusText" class="text-muted mb-3">Done talking? Request voting then</p>
+
+                    <!-- Add Request Voting Button -->
+                    <form id="requestVotingForm" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="request_voting">
+                        <button type="submit" class="btn btn-primary mt-3" {% if participant.request_voting == 'request' %}disabled{% endif %}>
+                            {% if participant.request_voting == 'request' %}
+                                <i class="feather icon-check me-2"></i>Voting Request Sent
+                            {% else %}
+                                <i class="feather icon-play-circle me-2"></i>Request Voting for My Group
+                            {% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Combined Questions and Rankings Card + Wait For Results Section -->
+<div class="container">
+    <!-- Questions and Rankings Card -->
+    <div id="questionsContainer">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="mb-0">
+                            <i class="feather icon-help-circle me-2"></i>Question and Ranking
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Question Display -->
+                        {% for question in level_questions %}
+                        <div class="question-item {% if forloop.counter == current_question %}active{% else %}d-none{% endif %}" data-question-index="{{ forloop.counter }}">
+                            <!-- Question with Circle Number -->
+                            <div class="d-flex mb-3">
+                                <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; min-width: 36px;">
+                                    <span class="text-white fw-bold">{{ forloop.counter }}</span>
+                                </div>
+                                <div class="bg-light border-start border-primary border-3 rounded p-3 flex-grow-1">
+                                    <h5 class="text-dark mb-0">{{ question.question_text }}</h5>
+                                </div>
+                            </div>
+
+                            <!-- Question progress indicator -->
+                            <div class="mb-3 pb-2 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="text-secondary mb-0">Question Progress</h6>
+                                    <span id="questionStatus{{ forloop.counter }}" class="badge {% if forloop.counter in all_voted_questions %}bg-success{% else %}bg-warning{% endif %}">
+                                        {% if forloop.counter in all_voted_questions %}All Voted{% else %}Waiting for votes{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Group Members Scrollable Row -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="text-secondary mb-0">Group Members</h6>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-secondary scroll-btn-left" type="button">
+                                            <i class="feather icon-chevron-left"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary scroll-btn-right" type="button">
+                                            <i class="feather icon-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="position-relative">
+                                <div id="unrankedContainer{{ forloop.counter }}"
+                                     class="droppable-area d-flex flex-row overflow-auto py-2 px-3 scrollable-container"
+                                     style="min-height: 110px; scroll-behavior: smooth; border: none;">
+                                    {% for member in group_members %}
+                                        {% if member.user.id != user_profile.id %}  <!-- Don't include current user -->
+                                        <div class="draggable-member bg-light rounded p-2 me-3 text-center position-relative" style="min-width: 80px;" data-member-id="{{ member.id }}">
+                                            <!-- Triple-dot menu -->
+                                            <div class="member-menu-toggle position-absolute" style="top: 5px; right: 5px; cursor: pointer;">
+                                                <i class="feather icon-more-vertical"></i>
+                                            </div>
+                                            <!-- Member dropdown menu -->
+                                            <div class="member-rank-dropdown position-fixed" style="display: none;">
+                                                <div class="dropdown-header p-2 border-bottom">
+                                                    <small class="fw-bold">Assign Rank</small>
+                                                </div>
+                                                <div class="rank-options p-0" style="max-height: 60vh; overflow-y: auto;">
+                                                    <!-- Rank options will be dynamically populated by JavaScript -->
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex flex-column align-items-center">
+                                                {% if member.user.photo %}
+                                                <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle mb-1" style="width: 50px; height: 50px; object-fit: cover;">
+                                                {% else %}
+                                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mb-1" style="width: 50px; height: 50px;">
+                                                    <i class="feather icon-user text-white" style="font-size: 24px;"></i>
+                                                </div>
+                                                {% endif %}
+                                                <span class="small text-truncate" style="max-width: 80px;">{{ member.user.name }}</span>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Ranking Section -->
+                            <div class="mb-3">
+                                <h6 class="text-secondary mb-2">Rankings</h6>
+                                <div class="d-flex flex-wrap gap-2" id="rankingsContainer{{ forloop.counter }}">
+                                    <!-- Rank boxes will be generated by JavaScript based on slot.total_rankings -->
+                                </div>
+                            </div>
+
+                            <!-- Question Navigation -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div id="questionMessage{{ forloop.counter }}" class="text-success fw-bold mb-2 text-center" style="display: none;">
+                                    Vote saved successfully!
+                                </div>
+                                <div class="ms-auto">
+                                    {% if forloop.last %}
+                                    <button class="btn btn-primary next-question" id="finishButton" data-question="{{ forloop.counter }}" disabled>
+                                        Finish<i class="feather icon-flag ms-2"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-primary next-question" data-question="{{ forloop.counter }}" {% if forloop.counter not in all_voted_questions %}disabled{% endif %}>
+                                        Next<i class="feather icon-arrow-right ms-2"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="alert alert-info">
+                            <p class="mb-0">No questions available for this level.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wait For Results Section - Only shown by JavaScript when Finish is clicked -->
+    <div id="waitForResultsContainer" class="row justify-content-center align-items-center" style="display: none;">
+        <div class="col-lg-8 col-md-10 col-12 mx-auto">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-body p-5 text-center">
+                    <div class="mb-4">
+                        <img src="{% static 'newicons/waiting.gif' %}" alt="Waiting for Results" style="width: 100px; height: 100px;">
+                    </div>
+                    <h3 class="mb-3 text-primary">Voting Completed!</h3>
+                    <p class="mb-4 text-muted">Wait for the instructor to publish the results.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+
+
+<style>
+
+
+    .text-copper {
+  color: #cd7f32;
+}
+.bg-copper {
+  background-color: #cd7f32;
+}
+
+/* Center the waiting container in the viewport */
+#waitForResultsContainer {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+}
+
+    .min-height-100 {
+        min-height: 100px;
+    }
+    .min-height-60 {
+        min-height: 60px;
+    }
+    .draggable-member {
+        cursor: move;
+    }
+    .droppable-area {
+        background-color: #f8f9fa;
+    }
+    .droppable-area.highlight {
+        background-color: #e9ecef;
+        border: 2px dashed #6c757d !important;
+    }
+
+
+    .member-menu-toggle {
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255,255,255,0.8);
+        border-radius: 50%;
+    }
+    .member-menu-toggle:hover {
+        opacity: 1;
+        background-color: #fff;
+    }
+    .member-rank-dropdown {
+        text-align: left;
+    }
+    .rank-option {
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .rank-option:last-child {
+        border-bottom: none;
+    }
+    .rank-option:hover {
+        background-color: #f0f0f0;
+    }
+    .rank-option.disabled {
+        color: #adb5bd;
+        cursor: not-allowed;
+    }
+
+    /* Mobile-friendly adjustments */
+    @media (max-width: 768px) {
+        .member-menu-toggle {
+            width: 30px;
+            height: 30px;
+        }
+
+        .rank-option {
+            padding: 12px 15px; /* Larger touch target on mobile */
+        }
+
+        /* Prevent body scrolling when dropdown is open */
+        body.dropdown-open {
+            overflow: hidden;
+        }
+    }
+
+
+/* Add these styles to your existing CSS */
+/* Prevent images from being draggable */
+.draggable-member img,
+.draggable-member .rounded-circle {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+    pointer-events: none; /* This prevents the image from receiving mouse events */
+}
+
+/* Ensure the parent element is the one being dragged */
+.draggable-member {
+    cursor: grab;
+    transition: all 0.2s;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* For touch devices, ensure entire member card is draggable */
+.draggable-member > div {
+    pointer-events: none;
+}
+
+/* Allow menu toggle to still be clickable */
+.draggable-member .member-menu-toggle,
+.draggable-member .member-rank-dropdown {
+    pointer-events: auto !important;
+}
+
+/* Style for when questions container is active - prevent body scrolling */
+body.questions-active {
+
+    width: 100%;
+    height: 100%;
+}
+
+/* Ensure question container is scrollable when body is locked */
+#questionsContainer {
+    max-height: 90vh;
+
+}
+
+/* Additional visual feedback for dragging */
+.draggable-member.dragging {
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    transform: scale(1.05);
+}
+
+
+
+    .draggable-member .rounded-circle,
+.draggable-member img {
+  width: 70px !important;
+  height: 70px !important;
+  object-fit: cover !important;
+  margin-bottom: 8px !important; /* More space below the image */
+}
+</style>
+
+<script>
+
+
+
+// Toggle Group Members Popup
+function toggleGroupMembers() {
+    const popup = document.getElementById('groupMembersPopup');
+    if (popup) {
+        if (popup.style.display === 'none' || popup.style.display === '') {
+            popup.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        } else {
+            popup.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+    }
+}
+
+// Variables for AJAX polling
+let pollingInterval = null;
+const POLL_INTERVAL = 5000; // Poll every 5 seconds
+
+
+
+/**
+ * Enable/disable page scrolling
+ * @param {boolean} lock - True to lock scrolling, false to enable
+ */
+
+ function lockPageScroll(lock) {
+    if (lock) {
+        // Save current scroll position
+        window.scrollPosition = [
+            window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft,
+            window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+        ];
+
+        // Add styles to prevent scrolling but maintain scroll position
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${window.scrollPosition[1]}px`;
+        document.body.style.left = `-${window.scrollPosition[0]}px`;
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+    } else {
+        // Restore scrolling
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+
+        // Restore scroll position
+        if (window.scrollPosition) {
+            window.scrollTo(window.scrollPosition[0], window.scrollPosition[1]);
+        }
+    }
+}
+
+
+
+function showMemberDropdown(toggle, dropdown) {
+    // Get position of toggle button
+    const rect = toggle.getBoundingClientRect();
+
+    // Position dropdown below the toggle button but aligned to the right
+    dropdown.style.top = (rect.bottom + 5) + 'px';
+    dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+    dropdown.style.display = 'block';
+
+    // Enhanced styling
+    dropdown.style.backgroundColor = 'white';
+    dropdown.style.opacity = '1';
+    dropdown.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
+    dropdown.style.border = '1px solid #dee2e6';
+    dropdown.style.zIndex = '9999';
+
+    // Ensure header has proper background
+    const header = dropdown.querySelector('.dropdown-header');
+    if (header) {
+        header.style.backgroundColor = '#f1f1f1';
+        header.style.color = '#333';
+        header.style.fontWeight = 'bold';
+        header.style.padding = '10px 15px';
+    }
+
+    // Style rank options
+    dropdown.querySelectorAll('.rank-option').forEach(option => {
+        option.style.backgroundColor = 'white';
+        option.style.opacity = '1';
+        option.style.padding = '10px 15px';
+        option.style.borderBottom = '1px solid #e9ecef';
+        option.style.cursor = 'pointer';
+    });
+}
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Get all the elements
+  const showButton = document.getElementById('showNotesButton');
+  const notesModal = document.getElementById('notesModal');
+  const closeButtons = document.querySelectorAll('#closeNotesModal, #closeNotesButton');
+  const saveButton = document.getElementById('saveNotesButton');
+  const clearButton = document.getElementById('clearNotesButton');
+  const notesContent = document.getElementById('notesContent');
+
+  // Editor buttons
+  const boldButton = document.getElementById('boldButton');
+  const italicButton = document.getElementById('italicButton');
+  const underlineButton = document.getElementById('underlineButton');
+  const bulletListButton = document.getElementById('bulletListButton');
+  const numberListButton = document.getElementById('numberListButton');
+  const checkboxButton = document.getElementById('checkboxButton');
+
+  // Storage key based on current slot and group
+  const slotId = '{{ slot.slot_id }}';
+  const groupName = '{{ participant.group_name }}';
+  const storageKey = `notes_${slotId}_${groupName}`;
+
+  // Check if elements exist (for debugging)
+  if (!showButton || !notesModal || !notesContent) {
+    console.error('Notes elements not found!');
+    return;
+  }
+
+  // Load saved notes from localStorage
+  const savedNotes = localStorage.getItem(storageKey);
+  if (savedNotes) {
+    notesContent.innerHTML = savedNotes;
+  }
+
+  // Show modal when button is clicked
+  showButton.addEventListener('click', function() {
+    notesModal.style.display = 'block';
+    document.body.classList.add('modal-open');
+
+    // Add modal backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    document.body.appendChild(backdrop);
+  });
+
+  // Close modal when close buttons are clicked
+  closeButtons.forEach(button => {
+    if (button) {
+      button.addEventListener('click', closeModal);
+    }
+  });
+
+  // Close modal when clicking outside
+  window.addEventListener('click', function(event) {
+    if (event.target === notesModal) {
+      closeModal();
+    }
+  });
+
+  // Function to close modal
+  function closeModal() {
+    notesModal.style.display = 'none';
+    document.body.classList.remove('modal-open');
+
+    // Remove backdrop
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) {
+      backdrop.parentNode.removeChild(backdrop);
+    }
+  }
+
+  // Save notes when save button is clicked
+  saveButton.addEventListener('click', function() {
+    localStorage.setItem(storageKey, notesContent.innerHTML);
+
+    // Show success message
+    const message = document.createElement('div');
+    message.className = 'alert alert-success position-fixed';
+    message.style.top = '20px';
+    message.style.right = '20px';
+    message.style.zIndex = '9999';
+    message.innerHTML = '<i class="feather icon-check me-2"></i>Notes saved successfully!';
+    document.body.appendChild(message);
+
+    // Remove message after 2 seconds
+    setTimeout(function() {
+      document.body.removeChild(message);
+    }, 2000);
+  });
+
+  // Clear notes when clear button is clicked
+  clearButton.addEventListener('click', function() {
+    if (confirm('Are you sure you want to clear all notes? This cannot be undone.')) {
+      notesContent.innerHTML = '';
+      localStorage.removeItem(storageKey);
+    }
+  });
+
+  // Text formatting buttons
+  boldButton.addEventListener('click', function() {
+    document.execCommand('bold', false, null);
+    notesContent.focus();
+  });
+
+  italicButton.addEventListener('click', function() {
+    document.execCommand('italic', false, null);
+    notesContent.focus();
+  });
+
+  underlineButton.addEventListener('click', function() {
+    document.execCommand('underline', false, null);
+    notesContent.focus();
+  });
+
+  bulletListButton.addEventListener('click', function() {
+    document.execCommand('insertUnorderedList', false, null);
+    notesContent.focus();
+  });
+
+  numberListButton.addEventListener('click', function() {
+    document.execCommand('insertOrderedList', false, null);
+    notesContent.focus();
+  });
+
+  // Insert checkbox
+  checkboxButton.addEventListener('click', function() {
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.style.marginRight = '5px';
+
+    // Insert at cursor position
+    const selection = window.getSelection();
+    const range = selection.getRangeAt(0);
+    range.insertNode(checkbox);
+
+    // Move cursor after checkbox
+    range.setStartAfter(checkbox);
+    range.setEndAfter(checkbox);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    notesContent.focus();
+  });
+
+  // Auto-save every 30 seconds
+  setInterval(function() {
+    if (notesContent.innerHTML.trim() !== '') {
+      localStorage.setItem(storageKey, notesContent.innerHTML);
+      console.log('Notes auto-saved at', new Date().toLocaleTimeString());
+    }
+  }, 30000);
+const downloadButton = document.getElementById('downloadPdfButton');
+
+  if (downloadButton) {
+    downloadButton.addEventListener('click', function() {
+      // Get notes content
+      const notesContent = document.getElementById('notesContent');
+
+      if (!notesContent || notesContent.innerHTML.trim() === '') {
+        alert('There is no content to download.');
+        return;
+      }
+
+      // Show loading indicator
+      const loadingMsg = document.createElement('div');
+      loadingMsg.className = 'alert alert-info position-fixed';
+      loadingMsg.style.top = '20px';
+      loadingMsg.style.right = '20px';
+      loadingMsg.style.zIndex = '9999';
+      loadingMsg.innerHTML = '<i class="feather icon-loader spin me-2"></i>Generating PDF...';
+      document.body.appendChild(loadingMsg);
+
+      // Create a temporary container for styled content
+      const container = document.createElement('div');
+      container.style.width = '8.27in'; // A4 width
+      container.style.padding = '0.5in';
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.fontFamily = 'Arial, sans-serif';
+      container.style.lineHeight = '1.5';
+      container.style.color = '#333';
+
+      // Get meta information
+      const slotId = '{{ slot.slot_id }}';
+      const groupName = '{{ participant.group_name }}';
+      const topic = '{{ assigned_topic|truncatechars:50|escapejs }}' || 'No topic assigned';
+      const currentDate = new Date().toLocaleString();
+
+      // Create header with logo and meta info
+      container.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: top; margin-bottom: 20px;">
+          <div>
+            <h2 style="margin: 0 0 10px 0;">My Notes</h2>
+            <p style="margin: 0; font-size: 12px;">Slot ID: ${slotId}</p>
+            <p style="margin: 0; font-size: 12px;">Group: ${groupName}</p>
+            <p style="margin: 0; font-size: 12px;">Topic: ${topic}</p>
+            <p style="margin: 0; font-size: 12px;">Generated: ${currentDate}</p>
+          </div>
+          <div>
+            <img src="{% static 'newicons/bitlogo_dark.png' %}" style="width: 200px; height: 100px;" />
+          </div>
+        </div>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 10px 0 20px 0;">
+        <div>${notesContent.innerHTML}</div>
+      `;
+
+      document.body.appendChild(container);
+
+      // Use html2canvas and jsPDF
+      setTimeout(() => {
+        html2canvas(container, {
+          scale: 2, // Higher scale for better quality
+          logging: false,
+          useCORS: true
+        }).then(canvas => {
+          // Remove the temporary container
+          document.body.removeChild(container);
+
+          // Create PDF
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF('p', 'pt', 'a4');
+
+          const imgWidth = 595.28; // A4 width in pts
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          const imgData = canvas.toDataURL('image/png');
+
+          pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+          // If content is longer than one page
+          if (imgHeight > 841.89) { // A4 height in pts
+            let remainingHeight = imgHeight;
+            let position = -841.89; // Starting position for the second page
+
+            while (remainingHeight > 0) {
+              pdf.addPage();
+              pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+              remainingHeight -= 841.89;
+              position -= 841.89;
+            }
+          }
+
+          // Save the PDF
+          pdf.save(`notes_${slotId}_${groupName}.pdf`);
+
+          // Remove loading message
+          document.body.removeChild(loadingMsg);
+
+          // Show success message
+          const successMsg = document.createElement('div');
+          successMsg.className = 'alert alert-success position-fixed';
+          successMsg.style.top = '20px';
+          successMsg.style.right = '20px';
+          successMsg.style.zIndex = '9999';
+          successMsg.innerHTML = '<i class="feather icon-check me-2"></i>PDF downloaded successfully!';
+          document.body.appendChild(successMsg);
+
+          // Remove success message after 2 seconds
+          setTimeout(() => {
+            document.body.removeChild(successMsg);
+          }, 2000);
+        });
+      }, 500);
+    });
+  }
+
+  // Add this style for the loading spinner
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .spin {
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+  `;
+  document.head.appendChild(style);
+
+
+});
+
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+
+     setTimeout(shuffleMembersInContainer, 100);
+
+     document.querySelectorAll('.next-question').forEach(button => {
+        button.addEventListener('click', function() {
+          // Short delay to allow the new question to become visible
+          setTimeout(shuffleMembersInContainer, 200);
+        });
+      });
+
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+        });
+    });
+
+
+    const speakingContainer = document.getElementById('speakingContainer');
+    if (speakingContainer) {
+        console.log("Speaking container found, setting up voting status check");
+
+        // Check frequently for voting status changes
+        const votingCheckInterval = setInterval(function() {
+            const slotId = window.location.pathname.split('/')[2];
+
+            fetch(`/slot/${slotId}/room/?check_voting=true&t=${Date.now()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.group_voting_in_progress === true) {
+                    console.log("Voting has started! Reloading page.");
+                    clearInterval(votingCheckInterval);
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error("Error checking voting status:", error);
+            });
+        }, 1000); // Check every second
+    }
+
+    // Variables to track touch/drag state
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDropdownTouch = false;
+    let draggedElement = null;
+    let touchTimeout = null;
+
+    // Timer variables
+    let questionTimers = {};
+    const QUESTION_TIME_LIMIT = 40; // 30 timer per question
+
+    // Initialize components
+    initRankingSystem();
+    initGroupMembersPopup();
+    setupAutoReload();
+    initRequestVotingForm();
+    startPolling();  // Start AJAX polling
+
+    /**
+     * Main initialization for the ranking system
+     */
+
+     // Lock scroll when voting in progress
+    const questionsContainer = document.getElementById('questionsContainer');
+    if (questionsContainer && !questionsContainer.style.display.includes('none')) {
+        lockPageScroll(true);
+    }
+
+    // Release scroll lock when voting completed
+    const finishButton = document.getElementById('finishButton');
+
+    if (finishButton) {
+        finishButton.addEventListener('click', function() {
+            console.log("Finish button clicked, showing waiting container");
+
+            // Hide questions container
+            const questionsContainer = document.getElementById('questionsContainer');
+            if (questionsContainer) {
+                questionsContainer.style.display = 'none';
+            }
+
+            // Show waiting container
+            const waitingContainer = document.getElementById('waitForResultsContainer');
+            if (waitingContainer) {
+                waitingContainer.style.display = 'block';
+
+                // Scroll to top for better visibility
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    }
+
+    // Modify polling function to handle results publication
+    if (typeof checkForUpdates === 'function') {
+        const originalCheckForUpdates = checkForUpdates;
+
+        checkForUpdates = function() {
+            // Call the original function first
+            originalCheckForUpdates.apply(this, arguments);
+
+            // Get the slot ID
+            const slotId = "{{ slot.slot_id }}";
+
+            // Make AJAX request to check for results
+            fetch(`/slot/${slotId}/room/`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // If results are published, show results container
+                    if (data.results_published) {
+                        // Hide waiting container if it's visible
+                        const waitingContainer = document.getElementById('waitForResultsContainer');
+                        if (waitingContainer && waitingContainer.style.display !== 'none') {
+                            // Reload the page to show the results
+                            location.reload();
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error("Error in AJAX request:", error);
+            });
+        };
+    }
+
+    // Modify the member dragging to prevent image dragging
+    document.querySelectorAll('.draggable-member img, .draggable-member .rounded-circle').forEach(img => {
+        img.addEventListener('dragstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable pointer events on images to allow drag on the parent element only
+        img.style.pointerEvents = 'none';
+    });
+
+    // Enhance drag start functionality
+    document.querySelectorAll('.draggable-member').forEach(member => {
+        // Add attribute to prevent dragging if we're explicitly showing its original HTML
+        member.setAttribute('draggable', 'true');
+
+        // Modify the existing drag event handlers if they exist
+        const existingDragStart = member.ondragstart;
+        member.ondragstart = function(e) {
+            // Don't start drag if the click was on the menu toggle
+            if (e.target.closest('.member-menu-toggle') || e.target.closest('.member-rank-dropdown')) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Set data for transfer
+            e.dataTransfer.setData('text/plain', this.dataset.memberId);
+
+            // Add dragging class with timeout to avoid Firefox issues
+            setTimeout(() => {
+                this.classList.add('dragging');
+            }, 0);
+
+            // Call existing handler if it exists
+            if (typeof existingDragStart === 'function') {
+                existingDragStart.call(this, e);
+            }
+        };
+    });
+
+
+    function initRankingSystem() {
+        // Generate rank boxes for each question
+        const questionItems = document.querySelectorAll('.question-item');
+        questionItems.forEach(item => {
+            const questionIndex = item.dataset.questionIndex;
+            generateRankBoxes(questionIndex);
+
+            // Add timer UI to each question
+            addTimerUI(item, questionIndex);
+        });
+
+        // Initialize functionality
+        initDragAndDrop();
+        initMemberMenus();
+        initQuestionNavigation();
+        initScrollButtons();
+
+        // Start timer for the first active question
+        const activeQuestion = document.querySelector('.question-item.active');
+        if (activeQuestion) {
+            startQuestionTimer(activeQuestion.dataset.questionIndex);
+        }
+    }
+
+    /**
+     * Add timer UI to question
+     */
+    function addTimerUI(questionItem, questionIndex) {
+        // Find the area before the question navigation buttons
+        const navigationArea = questionItem.querySelector('.d-flex.justify-content-between.align-items-center');
+
+        if (navigationArea) {
+            // Create timer container
+            const timerContainer = document.createElement('div');
+            timerContainer.className = 'timer-container d-flex align-items-center';
+            timerContainer.innerHTML = `
+                <div class="me-2">
+                    <i class="feather icon-clock text-warning"></i>
+                </div>
+                <div class="timer-display fw-bold" id="timer_${questionIndex}">
+                    00:30
+                </div>
+            `;
+
+            // Insert before navigation buttons
+            navigationArea.insertBefore(timerContainer, navigationArea.firstChild);
+        }
+    }
+
+    /**
+     * Start timer for a specific question
+     */
+
+    // Modified startQuestionTimer function to use localStorage for persistence
+function startQuestionTimer(questionIndex) {
+    console.log(`Starting timer for question ${questionIndex}`);
+
+    // Clear any existing timer for this question
+    if (questionTimers[questionIndex]) {
+        clearInterval(questionTimers[questionIndex]);
+    }
+
+    // Get the timer display element
+    const timerDisplay = document.getElementById(`timer_${questionIndex}`);
+    if (!timerDisplay) {
+        console.log(`Timer display not found for question ${questionIndex}`);
+        return;
+    }
+
+    // Get slotId from the URL
+    const slotId = window.location.pathname.split('/').filter(part => part).pop();
+    const timerStorageKey = `timer_q${questionIndex}_${slotId}`;
+
+    // Try to restore timer from sessionStorage
+    let timeRemaining = QUESTION_TIME_LIMIT;
+    try {
+        const savedData = sessionStorage.getItem(timerStorageKey);
+        if (savedData) {
+            const timerData = JSON.parse(savedData);
+            const now = Date.now();
+            const elapsedSeconds = Math.floor((now - timerData.timestamp) / 1000);
+            timeRemaining = Math.max(0, timerData.remaining - elapsedSeconds);
+
+            console.log(`Restored timer: ${timeRemaining}s remaining`);
+
+            if (timeRemaining <= 0) {
+                console.log("Timer already expired");
+                updateTimerDisplay(timerDisplay, 0);
+                timerDisplay.classList.add('text-danger');
+                handleQuestionTimeUp(questionIndex);
+                return;
+            }
+        }
+    } catch (e) {
+        console.error("Error restoring timer:", e);
+        timeRemaining = QUESTION_TIME_LIMIT;
+    }
+
+    // Update display with initial time
+    updateTimerDisplay(timerDisplay, timeRemaining);
+    console.log(`Timer initialized with ${timeRemaining} seconds`);
+
+    // Start the timer
+    questionTimers[questionIndex] = setInterval(() => {
+        timeRemaining--;
+
+        // Update the display
+        updateTimerDisplay(timerDisplay, timeRemaining);
+
+        // Save current state
+        try {
+            sessionStorage.setItem(timerStorageKey, JSON.stringify({
+                remaining: timeRemaining,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.error("Error saving timer state:", e);
+        }
+
+        // Check if time is up
+        if (timeRemaining <= 0) {
+            console.log("Timer reached zero, clearing interval");
+            clearInterval(questionTimers[questionIndex]);
+            sessionStorage.removeItem(timerStorageKey);
+            handleQuestionTimeUp(questionIndex);
+        }
+
+        // Change color when time is running low
+        if (timeRemaining <= 10) {
+            timerDisplay.classList.add('text-danger');
+        }
+    }, 1000);
+}
+
+/**
+ * Clear timer state when moving to next question
+ */
+function clearTimerState(questionIndex) {
+    const slotId = window.location.pathname.split('/').filter(part => part).pop();
+    const timerStorageKey = `timer_q${questionIndex}_${slotId}`;
+    sessionStorage.removeItem(timerStorageKey);
+}
+
+// Modified updateTimerDisplay function for better time formatting
+function updateTimerDisplay(timerDisplay, timeRemaining) {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+
+
+
+/**
+ * Simple function to shuffle the group members for each question
+ */
+function shuffleMembersInContainer() {
+  // For each question container, shuffle the members
+  const questionItems = document.querySelectorAll('.question-item');
+
+  questionItems.forEach(item => {
+    const questionIndex = item.dataset.questionIndex;
+    const unrankedContainer = document.getElementById(`unrankedContainer${questionIndex}`);
+
+    if (unrankedContainer) {
+      // Get all members in this container
+      const members = Array.from(unrankedContainer.querySelectorAll('.draggable-member'));
+
+      // Fisher-Yates shuffle algorithm
+      for (let i = members.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        // Append shuffles the DOM order
+        unrankedContainer.appendChild(members[j]);
+      }
+    }
+  });
+}
+
+
+
+/**
+ * Handle when question time is up
+ */
+function handleQuestionTimeUp(questionIndex) {
+    console.log(`Time up for question ${questionIndex}, handling transition`);
+
+    // Clear timer state
+    clearTimerState(questionIndex);
+
+    // Get the next button for this question
+    const nextButton = document.querySelector(`.next-question[data-question="${questionIndex}"]`);
+
+    // Check if rankings are provided
+    const totalRankings = parseInt("{{ slot.total_rankings }}") || 5;
+    let allRanksFilled = true;
+    let filledRanks = 0;
+
+    for (let i = 1; i <= totalRankings; i++) {
+        const rankArea = document.getElementById(`rank${i}_q${questionIndex}`);
+        if (rankArea && rankArea.querySelector('.draggable-member')) {
+            filledRanks++;
+        } else {
+            allRanksFilled = false;
+        }
+    }
+
+    // Only submit if all rankings are complete
+    if (allRanksFilled) {
+        console.log("All rankings complete, submitting data");
+        submitQuestionRankings(questionIndex, false); // False = not absent
+    } else {
+        console.log(`Incomplete rankings: ${filledRanks}/${totalRankings} filled`);
+        // Submit as absent user for this question
+        submitQuestionRankings(questionIndex, true); // True = mark as absent
+    }
+
+    // Disable dragging for this question
+    disableDraggingForQuestion(questionIndex);
+
+    // Always enable the next button regardless of rankings
+    if (nextButton) {
+        nextButton.disabled = false;
+
+        console.log("Enabling and clicking next button");
+        // Force click the next button after a brief delay
+        setTimeout(() => {
+            console.log("Clicking next button now");
+            nextButton.click();
+        }, 800);
+    } else {
+        console.log("Next button not found!");
+    }
+}
+
+/**
+ * Submit rankings for a question
+ */
+function submitQuestionRankings(questionIndex, isAbsent = false) {
+    // Remember scroll position
+    const scrollPosition = [
+        window.pageXOffset || document.documentElement.scrollLeft,
+        window.pageYOffset || document.documentElement.scrollTop
+    ];
+
+    // Build the ranking data
+    const formData = new FormData();
+    const totalRankings = parseInt("{{ slot.total_rankings }}") || 5;
+
+    // If not absent, collect the rankings
+    if (!isAbsent) {
+        for (let i = 1; i <= totalRankings; i++) {
+            const rankArea = document.getElementById(`rank${i}_q${questionIndex}`);
+            if (rankArea) {
+                const member = rankArea.querySelector('.draggable-member');
+                if (member) {
+                    formData.append(`rank${i}`, member.dataset.memberId);
+                }
+            }
+        }
+    }
+
+    // Add question index and CSRF token
+    formData.append('question_index', questionIndex);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('action', 'submit_ranking');
+
+    // Add absent flag if applicable
+    if (isAbsent) {
+        formData.append('is_absent', 'true');
+    }
+
+    // Use only the path portion of the URL
+    const currentPath = window.location.pathname;
+
+    // Send data to server via AJAX with proper headers
+    fetch(currentPath, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cache-Control': 'no-cache'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Rankings submitted successfully');
+
+            // Update question status
+            const statusEl = document.getElementById(`questionStatus${questionIndex}`);
+            if (statusEl) {
+                statusEl.textContent = 'Voted';
+                statusEl.classList.remove('bg-warning');
+                statusEl.classList.add('bg-success');
+            }
+
+            // Restore scroll position after success
+            window.scrollTo(scrollPosition[0], scrollPosition[1]);
+        } else {
+            console.error('Error submitting rankings:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        // Always restore scroll position
+        window.scrollTo(scrollPosition[0], scrollPosition[1]);
+    });
+
+    return false; // Prevent default behavior
+}
+
+    /**
+     * Auto-fill empty ranks with available members
+     */
+    function autoFillEmptyRanks(questionIndex) {
+        const totalRankings = parseInt("{{ slot.total_rankings }}") || 5;
+        const unrankedContainer = document.getElementById(`unrankedContainer${questionIndex}`);
+
+        if (!unrankedContainer) return;
+
+        // Get all unranked members
+        const unrankedMembers = Array.from(unrankedContainer.querySelectorAll('.draggable-member'));
+
+        if (unrankedMembers.length === 0) return;
+
+        // Check each rank and fill if empty
+        for (let i = 1; i <= totalRankings; i++) {
+            const rankArea = document.getElementById(`rank${i}_q${questionIndex}`);
+
+            if (rankArea && !rankArea.querySelector('.draggable-member')) {
+                // Get the next available member
+                const memberToRank = unrankedMembers.shift();
+
+                if (memberToRank) {
+                    // Hide empty state
+                    const emptyState = rankArea.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'none';
+                    }
+
+                    // Add member to rank
+                    rankArea.appendChild(memberToRank);
+                    memberToRank.classList.add('selected-for-rank');
+                } else {
+                    // No more members to rank
+                    break;
+                }
+            }
+        }
+
+        // Submit the rankings
+        submitQuestionRankings(questionIndex);
+    }
+
+    /**
+     * Disable dragging for a question when time is up
+     */
+    function disableDraggingForQuestion(questionIndex) {
+    console.log(`Disabling dragging for question ${questionIndex}`);
+
+    const questionItem = document.querySelector(`.question-item[data-question-index="${questionIndex}"]`);
+    if (!questionItem) {
+        console.log("Question item not found");
+        return;
+    }
+
+    // Disable all draggable members
+    const draggableMembers = questionItem.querySelectorAll('.draggable-member');
+    draggableMembers.forEach(member => {
+        member.setAttribute('draggable', 'false');
+        member.classList.add('voted');
+        member.style.cursor = 'default';
+
+        // Remove event listeners by cloning and replacing the element
+        const newMember = member.cloneNode(true);
+        member.parentNode.replaceChild(newMember, member);
+    });
+
+    console.log(`Disabled ${draggableMembers.length} draggable members`);
+}
+
+
+
+
+    // Update the request voting form to show questions container immediately on success
+function initRequestVotingForm() {
+    const requestVotingForm = document.getElementById('requestVotingForm');
+    if (requestVotingForm) {
+        requestVotingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const submitButton = this.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
+            const formData = new FormData(this);
+
+            // Get the slot ID from URL
+            const slotId = window.location.pathname.split('/')[2]; // Extract from current URL
+            const url = `/slot/${slotId}/room/`;
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update button state
+                    submitButton.innerHTML = '<i class="feather icon-check me-2"></i>Voting Request Sent';
+
+                    // Update request status text
+                    const statusText = document.getElementById('requestStatusText');
+                    if (statusText) {
+                        statusText.textContent = 'Request sent to the host';
+                        statusText.className = 'text-success mb-3';
+                    }
+
+                    // Start polling more frequently to detect when voting starts
+                    startFrequentPolling();
+                } else {
+                    submitButton.innerHTML = '<i class="feather icon-alert-circle me-2"></i>Failed. Try Again';
+                    submitButton.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                submitButton.innerHTML = '<i class="feather icon-alert-circle me-2"></i>Error. Try Again';
+                submitButton.disabled = false;
+            });
+        });
+    }
+}
+
+// Function to poll more frequently when waiting for voting to start
+function startFrequentPolling() {
+    console.log("Starting frequent polling for voting start");
+    if (window.frequentPollingInterval) {
+        clearInterval(window.frequentPollingInterval);
+    }
+
+    // Poll every 1 second to quickly detect when voting starts
+    window.frequentPollingInterval = setInterval(() => {
+        checkVotingStatus();
+    }, 1000);
+
+    // Stop frequent polling after 60 seconds (1 minute) to avoid unnecessary requests
+    setTimeout(() => {
+        if (window.frequentPollingInterval) {
+            clearInterval(window.frequentPollingInterval);
+            console.log("Stopped frequent polling");
+        }
+    }, 4000);
+}
+
+// Function to specifically check if voting has started
+function checkVotingStatus() {
+    const slotId = window.location.pathname.split('/')[2];
+
+    fetch(`/slot/${slotId}/room/`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-Check-Voting': 'true'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success' && data.group_voting_in_progress) {
+            console.log("Voting has started - showing questions container");
+
+            // Clear the frequent polling interval
+            if (window.frequentPollingInterval) {
+                clearInterval(window.frequentPollingInterval);
+            }
+
+            // Hide speaking container
+            const speakingContainer = document.querySelector('.container > .row');
+            if (speakingContainer) {
+                speakingContainer.style.display = 'none';
+            }
+
+            // Show questions container
+            const questionsContainer = document.getElementById('questionsContainer');
+            if (questionsContainer) {
+                questionsContainer.style.display = 'block';
+
+                // Start timer for the first question
+                const activeQuestion = document.querySelector('.question-item.active');
+                if (activeQuestion && typeof startQuestionTimer === 'function') {
+                    startQuestionTimer(activeQuestion.dataset.questionIndex);
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error checking voting status:", error);
+    });
+}
+
+
+    // Variables for AJAX polling
+    let pollingInterval = null;
+    const POLL_INTERVAL = 5000; // Poll every 5 seconds
+
+    function showMemberDropdown(toggle, dropdown) {
+        // Get position of toggle button
+        const rect = toggle.getBoundingClientRect();
+
+        // Position dropdown below the toggle button but aligned to the right
+        dropdown.style.top = (rect.bottom + 5) + 'px';
+        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        dropdown.style.display = 'block';
+    }
+
+    /**
+     * Initialize Group Members Popup
+     * (This uses the existing toggleGroupMembers function)
+     */
+    function initGroupMembersPopup() {
+        // Add click event to close popup when clicking outside content
+        const popup = document.getElementById('groupMembersPopup');
+        if (popup) {
+            popup.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    toggleGroupMembers();
+                }
+            });
+        }
+    }
+
+    /**
+     * Set up automatic page reload for updates
+     */
+    function setupAutoReload() {
+        // Check URL for question parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const questionParam = urlParams.get('question');
+
+        if (questionParam) {
+            // Activate the specified question
+            const questions = document.querySelectorAll('.question-item');
+            questions.forEach(q => {
+                q.classList.remove('active');
+                q.classList.add('d-none');
+            });
+
+            const targetQuestion = document.querySelector(`.question-item[data-question-index="${questionParam}"]`);
+            if (targetQuestion) {
+                targetQuestion.classList.remove('d-none');
+                targetQuestion.classList.add('active');
+
+                // Start timer for this question
+                startQuestionTimer(questionParam);
+            }
+        }
+    }
+
+    if (sessionStorage.getItem('votingStateChanged') === 'true') {
+        // Clear the flag so we don't reload again
+        sessionStorage.removeItem('votingStateChanged');
+        // Update the initial voting state to match the current state
+        window.initialVotingState = {{ group_voting_in_progress|yesno:"true,false" }};
+        console.log("Page reloaded due to voting state change. New state:", window.initialVotingState);
+    }
+
+    /**
+     * AJAX Polling Functions for Updates
+     */
+    function startPolling() {
+    // Clear any existing interval
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+    }
+
+    // Set up more frequent polling (every 2 seconds)
+    pollingInterval = setInterval(checkForUpdates, 2000);
+
+    // Also check immediately
+    checkForUpdates();
+}
+
+
+    function checkForUpdates() {
+    // Get the slot ID
+    const slotId = "{{ slot.slot_id }}";
+
+    // Make AJAX request to the room_page URL
+    fetch(`/slot/${slotId}/room/`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Update question status badges
+            data.all_voted_questions.forEach(questionNum => {
+                const statusEl = document.getElementById(`questionStatus${questionNum}`);
+                if (statusEl) {
+                    statusEl.textContent = 'All Voted';
+                    statusEl.classList.remove('bg-warning');
+                    statusEl.classList.add('bg-success');
+                }
+
+                // Enable next question buttons if applicable
+                const nextButton = document.querySelector(`.next-question[data-question="${questionNum}"]`);
+                if (nextButton) {
+                    nextButton.disabled = false;
+                }
+            });
+
+            // Store the initial voting state when the page loads
+            if (typeof window.initialVotingState === 'undefined') {
+                window.initialVotingState = {{ group_voting_in_progress|yesno:"true,false" }};
+                console.log("Initial voting state:", window.initialVotingState);
+            }
+
+            // Check for voting status changes (started/stopped)
+            if (data.group_voting_in_progress !== window.initialVotingState) {
+                console.log("Voting status changed - handling transition");
+
+                if (data.group_voting_in_progress) {
+                    // Voting has started - show questions immediately without refresh
+                    // More reliable way to find the speaking container
+                    const allContainers = document.querySelectorAll('.container > .row');
+                    let speakingContainer = null;
+
+                    // Find the speaking container
+                    for (const container of allContainers) {
+                        if (container.querySelector('.card.bg-opacity-10') ||
+                            container.querySelector('img[alt="Ready to Speak"]')) {
+                            speakingContainer = container;
+                            break;
+                        }
+                    }
+
+                    const questionsContainer = document.getElementById('questionsContainer');
+
+                    if (speakingContainer && questionsContainer) {
+                        console.log("Showing questions container");
+                        speakingContainer.style.display = 'none';
+                        questionsContainer.style.display = 'block';
+
+                        // Start timer for first question
+                        const activeQuestion = document.querySelector('.question-item.active');
+                        if (activeQuestion && typeof startQuestionTimer === 'function') {
+                            startQuestionTimer(activeQuestion.dataset.questionIndex);
+                        }
+
+                        // Initialize ranking system if needed
+                        if (typeof initRankingSystem === 'function' &&
+                            !window.rankingSystemInitialized) {
+                            initRankingSystem();
+                            window.rankingSystemInitialized = true;
+                        }
+
+                        // Update stored state to prevent multiple transitions
+                        window.initialVotingState = true;
+                    } else {
+                        console.log("Could not find containers:", {
+                            speakingContainer,
+                            questionsContainer
+                        });
+                    }
+                } else if (data.voting_completed) {
+                    // Voting has completed - show waiting container
+                    const questionsContainer = document.getElementById('questionsContainer');
+                    const waitingContainer = document.getElementById('waitForResultsContainer');
+
+                    if (questionsContainer && waitingContainer) {
+                        console.log("Showing waiting container");
+                        questionsContainer.style.display = 'none';
+                        waitingContainer.style.display = 'block';
+
+                        // Scroll to top
+                        window.scrollTo({
+                            top: 0,
+                            behavior: 'smooth'
+                        });
+
+                        // Update stored state
+                        window.initialVotingState = false;
+                    }
+                } else {
+                    // Other state changes might require a reload
+                    console.log("Other voting state change - reloading page");
+                    location.reload();
+                    return;
+                }
+            }
+
+            // Check if voting is completed
+            if (data.voting_completed && !document.querySelector('#waitForResultsContainer').classList.contains('active-view')) {
+                // Hide questions container
+                const questionsContainer = document.getElementById('questionsContainer');
+                if (questionsContainer) {
+                    questionsContainer.style.display = 'none';
+                }
+
+                // Show waiting results container
+                const waitingContainer = document.getElementById('waitForResultsContainer');
+                if (waitingContainer) {
+                    waitingContainer.style.display = 'block';
+                    waitingContainer.classList.add('active-view');
+                }
+
+                // Scroll to top for better visibility
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            }
+
+            // Check if results have been published
+            if (data.results_published) {
+                // Reload page to show results
+                location.reload();
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error in AJAX request:", error);
+    });
+}
+
+
+
+// Helper function to update results content
+function updateResultsContent(data) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    if (!resultsContainer) return;
+
+    // Find the actual card body inside results container
+    const resultsCardBody = resultsContainer.querySelector('.card-body');
+    if (!resultsCardBody) return;
+
+    // Update user rank and mark
+    const userRank = data.user_rank;
+    const userMark = data.user_mark;
+
+    // Update icon based on rank
+    const iconContainer = resultsCardBody.querySelector('.display-1');
+    if (iconContainer) {
+        if (userRank <= 3) {
+            iconContainer.innerHTML = '<i class="bi bi-trophy-fill"></i>';
+            iconContainer.className = 'display-1 mb-3 text-warning text-center';
+        } else {
+            iconContainer.innerHTML = '<i class="bi bi-emoji-laughing-fill"></i>';
+            iconContainer.className = 'display-1 mb-3 text-primary text-center';
+        }
+    }
+
+    // Update user result message
+    const userResultDiv = resultsCardBody.querySelector('.mb-4.text-center');
+    if (userResultDiv) {
+        if (userRank && userRank <= data.voting_parameters.max_ranks) {
+            let rankClass = "text-primary";
+            let rankText = `${userRank}th`;
+
+            if (userRank === 1) {
+                rankClass = "text-warning";
+                rankText = "1st";
+            } else if (userRank === 2) {
+                rankClass = "text-secondary";
+                rankText = "2nd";
+            } else if (userRank === 3) {
+                rankClass = "text-copper";
+                rankText = "3rd";
+            }
+
+            userResultDiv.innerHTML = `
+                <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                <p class="mb-0 h5">You secured <span class="${rankClass} fw-bold">${rankText} Place</span> with ${userMark} points!</p>
+            `;
+        } else {
+            userResultDiv.innerHTML = `
+                <h4 class="mb-2 text-secondary">Better luck next time!</h4>
+                <p class="mb-0 h5">You earned ${userMark} points.</p>
+            `;
+        }
+    }
+
+    // Update rankings table
+    const tableBody = resultsCardBody.querySelector('table tbody');
+    if (tableBody && data.ranked_members && data.ranked_members.length > 0) {
+        tableBody.innerHTML = ''; // Clear existing content
+
+        // Add rows for each ranked member (up to max_ranks)
+        data.ranked_members.forEach((member, index) => {
+            if (index < data.voting_parameters.max_ranks) {
+                const row = document.createElement('tr');
+
+                // Highlight current user's row
+                if (member.id == {{participant.id}}) {
+                    row.className = 'table-primary';
+                }
+
+                // Create rank cell
+                let rankHTML = '';
+                if (index === 0) {
+                    rankHTML = `<div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;"><i class="feather icon-award text-white"></i></div>`;
+                } else if (index === 1) {
+                    rankHTML = `<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;"><i class="feather icon-award text-white"></i></div>`;
+                } else if (index === 2) {
+                    rankHTML = `<div class="rounded-circle bg-copper d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;"><i class="feather icon-award text-white"></i></div>`;
+                } else {
+                    rankHTML = `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;"><span class="fw-bold">${index+1}</span></div>`;
+                }
+
+                // Format rank suffix
+                let rankSuffix = 'th';
+                if (index+1 === 1) rankSuffix = 'st';
+                else if (index+1 === 2) rankSuffix = 'nd';
+                else if (index+1 === 3) rankSuffix = 'rd';
+
+                // Build the row HTML
+                row.innerHTML = `
+                    <td class="text-center">
+                        <div class="d-flex align-items-center justify-content-center">
+                            ${rankHTML}
+                            <span>${index+1}${rankSuffix}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex align-items-center justify-content-center">
+                            ${member.photo_url ?
+                                `<img src="${member.photo_url}" alt="${member.name}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">` :
+                                `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;"><i class="feather icon-user text-secondary"></i></div>`
+                            }
+                            <span>${member.name}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <span class="fw-bold">${member.mark}</span>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            }
+        });
+    }
+}
+
+
+    /**
+     * Generate rank boxes with icons for a question
+     */
+function generateRankBoxes(questionIndex) {
+    const rankingsContainer = document.getElementById(`rankingsContainer${questionIndex}`);
+    if (!rankingsContainer) return;
+
+    // Get max_ranks from the voting parameters passed in the context
+    const votingParams = {{ voting_parameters|safe }};
+    const maxRanks = votingParams.max_ranks || 5;
+
+    // Log the max ranks for debugging
+    console.log(`Generating ${maxRanks} rank boxes for question ${questionIndex}`);
+
+    // Clear existing content
+    rankingsContainer.innerHTML = '';
+
+    // Define rank labels
+    const rankLabels = ['st', 'nd', 'rd', 'th', 'th', 'th'];
+
+    // Generate rank boxes dynamically based on max_ranks
+    for (let i = 1; i <= maxRanks; i++) {
+        const rankBox = document.createElement('div');
+        rankBox.className = 'rank-box mb-2';
+        rankBox.style.flex = '1';
+        rankBox.style.minWidth = '100px';
+        rankBox.style.maxWidth = '150px';
+
+        // Get ordinal suffix
+        const suffix = i <= 3 ? rankLabels[i-1] : rankLabels[3];
+
+        // Calculate score: first rank gets highest, last rank gets lowest
+        const score = maxRanks - i + 1;
+
+        // Create rank box HTML with dynamic styling
+        rankBox.innerHTML = `
+            <div class="d-flex align-items-center mb-1">
+                <div class="rounded-circle ${getBackgroundClass(i)} d-flex align-items-center justify-content-center me-2 ${getTextClass(i)}" style="width: 24px; height: 24px;">
+                    ${i}
+                </div>
+                <span class="fw-bold">${i}${suffix} Place </span>
+            </div>
+            <div id="rank${i}_q${questionIndex}" class="droppable-area border rounded p-2 text-center"
+                 data-rank="${i}" data-question="${questionIndex}" data-score="${score}"
+                 style="min-height: 80px; display: flex; align-items: center; justify-content: center;">
+                <div class="empty-state text-muted">Drop member here</div>
+            </div>
+        `;
+
+        rankingsContainer.appendChild(rankBox);
+    }
+
+    // Helper function to get background class
+    function getBackgroundClass(rank) {
+        switch(rank) {
+            case 1: return 'bg-warning';
+            case 2: return 'bg-secondary';
+            case 3: return 'bg-copper';
+            default: return 'bg-light';
+        }
+    }
+
+    // Helper function to get text class
+    function getTextClass(rank) {
+        return rank <= 3 ? 'text-white' : 'text-dark';
+    }
+
+
+}
+
+    /**
+     * Initialize drag and drop functionality
+     */
+    function initDragAndDrop() {
+    const questionItems = document.querySelectorAll('.question-item');
+
+    questionItems.forEach(item => {
+        const questionIndex = item.dataset.questionIndex;
+        const draggableMembers = item.querySelectorAll('.draggable-member');
+        const droppableAreas = item.querySelectorAll('.droppable-area');
+
+        // Make members draggable
+        draggableMembers.forEach(member => {
+            member.setAttribute('draggable', 'true');
+
+            // Clean up by removing any existing handlers
+            const newMember = member.cloneNode(true);
+            member.parentNode.replaceChild(newMember, member);
+
+            // Add drag events (desktop)
+            newMember.addEventListener('dragstart', function(e) {
+                if (e.target.closest('.member-menu-toggle') || e.target.closest('.member-rank-dropdown')) {
+                    e.preventDefault();
+                    return false;
+                }
+                e.dataTransfer.setData('text/plain', this.dataset.memberId);
+                setTimeout(() => this.classList.add('dragging'), 0);
+            });
+
+            newMember.addEventListener('dragend', function() {
+                this.classList.remove('dragging');
+            });
+
+            // Add touch events (mobile) - no delays
+            newMember.addEventListener('touchstart', handleTouchStart, {passive: false});
+            newMember.addEventListener('touchmove', handleTouchMove, {passive: false});
+            newMember.addEventListener('touchend', handleTouchEnd, {passive: false});
+        });
+
+        // Make areas droppable
+        droppableAreas.forEach(area => {
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                area.classList.add('highlight');
+            });
+
+            area.addEventListener('dragleave', function() {
+                area.classList.remove('highlight');
+            });
+
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                area.classList.remove('highlight');
+                const memberId = e.dataTransfer.getData('text/plain');
+                const memberElement = document.querySelector(`.draggable-member[data-member-id="${memberId}"]`);
+                if (memberElement) {
+                    handleMemberPlacement(area, memberElement, questionIndex);
+                }
+            });
+        });
+    });
+}
+    /**
+     * Handle member placement in a rank area
+     */
+    function handleMemberPlacement(targetArea, memberElement, questionIndex) {
+    // Remember scroll position before manipulation
+    const scrollPosition = [
+        window.pageXOffset || document.documentElement.scrollLeft,
+        window.pageYOffset || document.documentElement.scrollTop
+    ];
+
+    // Get total rankings
+    const totalRankings = parseInt("{{ slot.total_rankings }}") || 5;
+
+    // Check if this is a ranking area (rank1-5)
+    if (targetArea.id && targetArea.id.startsWith('rank')) {
+        // Remove from unranked container
+        const unrankedContainer = document.getElementById(`unrankedContainer${questionIndex}`);
+        const memberInUnranked = unrankedContainer?.querySelector(`.draggable-member[data-member-id="${memberElement.dataset.memberId}"]`);
+        if (memberInUnranked) {
+            unrankedContainer.removeChild(memberInUnranked);
+        }
+
+        // Check all ranking positions and remove if found there
+        for (let i = 1; i <= totalRankings; i++) {
+            const rankBox = document.getElementById(`rank${i}_q${questionIndex}`);
+            if (rankBox && rankBox !== targetArea) {
+                const memberInRank = rankBox.querySelector(`.draggable-member[data-member-id="${memberElement.dataset.memberId}"]`);
+                if (memberInRank) {
+                    rankBox.removeChild(memberInRank);
+
+                    // Show the empty state
+                    const emptyState = rankBox.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        // If there's already a member in this rank, move it back to unranked
+        if (targetArea.querySelector('.draggable-member')) {
+            const existingMember = targetArea.querySelector('.draggable-member');
+            existingMember.classList.remove('selected-for-rank');
+            unrankedContainer?.appendChild(existingMember);
+        }
+
+        // Hide the empty state message
+        const emptyState = targetArea.querySelector('.empty-state');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
+
+        // Move the member to this rank
+        targetArea.appendChild(memberElement);
+        memberElement.classList.add('selected-for-rank');
+
+        // Check if all ranks are filled and enable/disable next button accordingly
+        updateNextButtonState(questionIndex);
+    }
+    // If dropped in unranked container
+    else if (targetArea.id && targetArea.id.startsWith('unrankedContainer')) {
+        // Check if member is already in unranked container to prevent duplication
+        const memberAlreadyInUnranked = targetArea.querySelector(`.draggable-member[data-member-id="${memberElement.dataset.memberId}"]`);
+        if (memberAlreadyInUnranked) {
+            // If already here, don't duplicate
+            return;
+        }
+
+        // Check if member is in any rank boxes and remove it
+        let memberRemoved = false;
+        for (let i = 1; i <= totalRankings; i++) {
+            const rankBox = document.getElementById(`rank${i}_q${questionIndex}`);
+            if (rankBox) {
+                const memberInRank = rankBox.querySelector(`.draggable-member[data-member-id="${memberElement.dataset.memberId}"]`);
+                if (memberInRank) {
+                    rankBox.removeChild(memberInRank);
+                    memberRemoved = true;
+
+                    // Show the empty state message
+                    const emptyState = rankBox.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        // Only add to unranked if it came from a rank box
+        if (memberRemoved) {
+            // Remove selected style
+            memberElement.classList.remove('selected-for-rank');
+            targetArea.appendChild(memberElement);
+        }
+
+        // Update next button state
+        updateNextButtonState(questionIndex);
+    }
+
+    // Critical: Restore scroll position after DOM manipulation
+    setTimeout(() => {
+        window.scrollTo(scrollPosition[0], scrollPosition[1]);
+    }, 0);
+}
+
+    /**
+     * Update the next button state based on rank completion
+     */
+
+    function updateNextButtonState(questionIndex) {
+    // Get the voting parameters from the server
+    const votingParams = {{ voting_parameters|safe }};
+    const totalRankings = votingParams.max_ranks || 5;
+    const nextButton = document.querySelector(`.next-question[data-question="${questionIndex}"]`);
+
+    if (!nextButton) return;
+
+    // Check if the required number of ranks are filled
+    let allRanksFilled = true;
+    for (let i = 1; i <= totalRankings; i++) {
+        const rankArea = document.getElementById(`rank${i}_q${questionIndex}`);
+        if (!rankArea || !rankArea.querySelector('.draggable-member')) {
+            allRanksFilled = false;
+            break;
+        }
+    }
+
+    // Enable/disable next button
+    nextButton.disabled = !allRanksFilled;
+
+    // If all ranks are filled, auto-submit the rankings
+    if (allRanksFilled) {
+        // Remember scroll position
+        const scrollPosition = [
+            window.pageXOffset || document.documentElement.scrollLeft,
+            window.pageYOffset || document.documentElement.scrollTop
+        ];
+
+        // Show success message
+        const messageEl = document.getElementById(`questionMessage${questionIndex}`);
+        if (messageEl) {
+            messageEl.textContent = 'Rankings saved! You can proceed to the next question.';
+            messageEl.className = 'text-success fw-bold mb-2 text-center';
+            messageEl.style.display = 'block';
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // Submit the rankings if we haven't submitted these specific rankings before
+        const rankingsContainer = document.getElementById(`rankingsContainer${questionIndex}`);
+        if (rankingsContainer && !rankingsContainer.dataset.submitted) {
+            submitQuestionRankings(questionIndex);
+            rankingsContainer.dataset.submitted = 'true';
+
+            // Reset this after a delay to allow resubmission if ranks change
+            setTimeout(() => {
+                if (rankingsContainer) {
+                    rankingsContainer.dataset.submitted = '';
+                }
+            }, 2000);
+        }
+
+        // Restore scroll position
+        setTimeout(() => {
+            window.scrollTo(scrollPosition[0], scrollPosition[1]);
+        }, 0);
+    }
+}
+
+
+
+    /**
+     * Initialize triple-dot menus for member ranking
+     */
+    function initMemberMenus() {
+    // Add event listener to all menu toggles
+    document.addEventListener('click', function(e) {
+        const toggle = e.target.closest('.member-menu-toggle');
+        if (!toggle) {
+            // If clicking outside a toggle, close all dropdowns
+            if (!e.target.closest('.member-rank-dropdown')) {
+                document.querySelectorAll('.member-rank-dropdown').forEach(dropdown => {
+                    dropdown.style.display = 'none';
+                });
+            }
+            return;
+        }
+
+        // Stop propagation to prevent drag handlers from interfering
+        e.stopPropagation();
+        e.preventDefault();
+
+        // Get the parent member element and dropdown
+        const memberEl = toggle.closest('.draggable-member');
+        const dropdown = memberEl.querySelector('.member-rank-dropdown');
+
+        // Close all other dropdowns first
+        document.querySelectorAll('.member-rank-dropdown').forEach(menu => {
+            if (menu !== dropdown) {
+                menu.style.display = 'none';
+            }
+        });
+
+        // Toggle this dropdown with proper positioning
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            // Get position of toggle button
+            const rect = toggle.getBoundingClientRect();
+
+            // Position dropdown absolutely with fixed coordinates
+            dropdown.style.position = 'fixed';
+            dropdown.style.top = (rect.bottom + 5) + 'px';
+            dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+            dropdown.style.display = 'block';
+            dropdown.style.zIndex = '9999'; // Ensure high z-index
+
+            // Get the question number from the active question container
+            const activeQuestion = document.querySelector('.question-item.active');
+            if (!activeQuestion) return;
+
+            const questionIndex = activeQuestion.dataset.questionIndex;
+
+            // Populate rank options for this question
+            populateRankOptions(dropdown, memberEl, questionIndex);
+        } else {
+            dropdown.style.display = 'none';
+        }
+    });
+}
+
+// Modify the populateRankOptions function to ensure proper styling and content
+function populateRankOptions(dropdown, memberEl, questionIndex) {
+    // Clear dropdown first
+    dropdown.innerHTML = '';
+
+    // Add proper styling
+    dropdown.style.backgroundColor = 'white';
+    dropdown.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
+    dropdown.style.border = '1px solid #dee2e6';
+    dropdown.style.borderRadius = '4px';
+    dropdown.style.padding = '5px 0';
+    dropdown.style.minWidth = '180px';
+    dropdown.style.zIndex = '9999'; // Ensure high z-index
+
+    // Position dropdown properly based on screen position
+    const rect = memberEl.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+
+    // If near right edge of screen, align dropdown to the left
+    if (rect.right + 180 > viewportWidth) {
+        dropdown.style.right = 'auto';
+        dropdown.style.left = Math.max(5, rect.left - 100) + 'px';
+    }
+    // If near left edge, align dropdown to the right
+    else if (rect.left < 180) {
+        dropdown.style.left = Math.max(5, rect.left) + 'px';
+        dropdown.style.right = 'auto';
+    }
+    // Otherwise, center it below the member
+    else {
+        dropdown.style.left = (rect.left + rect.width/2 - 90) + 'px';
+        dropdown.style.right = 'auto';
+    }
+
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'dropdown-header p-2 border-bottom';
+    header.innerHTML = '<small class="fw-bold">Assign Rank</small>';
+    header.style.backgroundColor = '#f1f1f1';
+    header.style.color = '#333';
+    dropdown.appendChild(header);
+
+    // Create options container
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'rank-options p-0';
+    optionsContainer.style.maxHeight = '60vh';
+    optionsContainer.style.overflowY = 'auto';
+    dropdown.appendChild(optionsContainer);
+
+    // Get max ranks from voting parameters
+    const votingParams = {{ voting_parameters|safe }};
+    const maxRanks = votingParams.max_ranks || 5;
+
+    // Get all existing ranked members
+    const occupiedRanks = [];
+    let memberIsRanked = false;
+    let currentRank = null;
+
+    for (let i = 1; i <= maxRanks; i++) {
+        const rankArea = document.getElementById(`rank${i}_q${questionIndex}`);
+        if (rankArea && rankArea.querySelector('.draggable-member')) {
+            const rankedMemberId = rankArea.querySelector('.draggable-member').dataset.memberId;
+
+            if (rankedMemberId === memberEl.dataset.memberId) {
+                memberIsRanked = true;
+                currentRank = i;
+            } else {
+                occupiedRanks.push(i);
+            }
+        }
+    }
+
+    // Add "Remove Ranking" option if this member is currently ranked
+    if (memberIsRanked) {
+        const removeOption = document.createElement('div');
+        removeOption.className = 'rank-option text-danger p-2';
+        removeOption.innerHTML = '<i class="feather icon-x-circle me-2"></i>Remove Ranking';
+        removeOption.style.padding = '10px 15px';
+        removeOption.style.cursor = 'pointer';
+        removeOption.style.borderBottom = '1px solid #f0f0f0';
+        removeOption.style.backgroundColor = 'white'; // Ensure background is set
+
+        removeOption.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            // Handle rank removal logic here
+            const rankArea = document.getElementById(`rank${currentRank}_q${questionIndex}`);
+            if (rankArea && rankArea.contains(memberEl)) {
+                rankArea.removeChild(memberEl);
+
+                // Show empty state
+                const emptyState = rankArea.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                }
+            }
+
+            // Move back to unranked container
+            memberEl.classList.remove('selected-for-rank');
+            const unrankedContainer = document.getElementById(`unrankedContainer${questionIndex}`);
+            if (unrankedContainer) {
+                unrankedContainer.appendChild(memberEl);
+            }
+
+            // Update next button state
+            updateNextButtonState(questionIndex);
+
+            // Close dropdown
+            dropdown.style.display = 'none';
+        });
+
+        optionsContainer.appendChild(removeOption);
+
+        // Add divider
+        const divider = document.createElement('hr');
+        divider.className = 'my-1';
+        divider.style.margin = '4px 0';
+        optionsContainer.appendChild(divider);
+    }
+
+    // Create rank options - ONLY up to maxRanks
+    for (let i = 1; i <= maxRanks; i++) {
+        const isOccupied = occupiedRanks.includes(i);
+        const isCurrentRank = (i === currentRank);
+
+        const option = document.createElement('div');
+        option.className = 'rank-option d-flex align-items-center p-2';
+        option.style.padding = '10px 15px';
+        option.style.borderBottom = '1px solid #e9ecef';
+        option.style.cursor = isOccupied ? 'not-allowed' : 'pointer';
+        option.style.backgroundColor = 'white'; // Ensure background is set
+
+        if (isCurrentRank) {
+            option.classList.add('bg-light');
+        }
+
+        if (isOccupied) {
+            option.classList.add('disabled');
+            option.style.color = '#adb5bd';
+        }
+
+        // Get ordinal suffix
+        let suffix;
+        if (i === 1) suffix = 'st';
+        else if (i === 2) suffix = 'nd';
+        else if (i === 3) suffix = 'rd';
+        else suffix = 'th';
+
+        // Icon based on rank
+        let iconHTML, iconClass;
+        if (i === 1) {
+            iconHTML = '<i class="feather icon-award me-2"></i>';
+            iconClass = 'text-warning';
+        } else if (i === 2) {
+            iconHTML = '<i class="feather icon-award me-2"></i>';
+            iconClass = 'text-secondary';
+        } else if (i === 3) {
+            iconHTML = '<i class="feather icon-award me-2"></i>';
+            iconClass = 'text-copper';
+        } else {
+            iconHTML = '<i class="feather icon-check-circle me-2"></i>';
+            iconClass = 'text-primary';
+        }
+
+        // Removed points display as requested
+        option.innerHTML = `<span class="${iconClass}">${iconHTML}</span>${i}${suffix} Place`;
+
+        // Show checkmark for current rank
+        if (isCurrentRank) {
+            option.innerHTML += '<i class="feather icon-check ms-2 text-success"></i>';
+        }
+
+        // Only add click handler if not occupied or if it's the current rank
+        if (!isOccupied || isCurrentRank) {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+
+                // If already in this rank, just close the dropdown
+                if (isCurrentRank) {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+
+                // Handle the member placement
+                const rankArea = document.getElementById(`rank${i}_q${questionIndex}`);
+                if (rankArea) {
+                    handleMemberPlacement(rankArea, memberEl, questionIndex);
+                }
+
+                // Close dropdown
+                dropdown.style.display = 'none';
+            });
+        }
+
+        optionsContainer.appendChild(option);
+    }
+}
+    /**
+     * Initialize scroll buttons for horizontal scrolling
+     */
+    function initScrollButtons() {
+        // Find all scroll button pairs
+        document.querySelectorAll('.question-item').forEach(item => {
+            const leftBtn = item.querySelector('.scroll-btn-left');
+            const rightBtn = item.querySelector('.scroll-btn-right');
+            const questionIndex = item.dataset.questionIndex;
+            const container = document.getElementById(`unrankedContainer${questionIndex}`);
+
+            if (!leftBtn || !rightBtn || !container) return;
+
+            // Scroll left button
+            leftBtn.addEventListener('click', function() {
+                container.scrollBy({
+                    left: -150,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Scroll right button
+            rightBtn.addEventListener('click', function() {
+                container.scrollBy({
+                    left: 150,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    }
+
+    // For better mobile experience, enhance the touch handlers
+function enhanceTouchHandling() {
+    document.querySelectorAll('.draggable-member').forEach(member => {
+        // Touch Start Handler - with scroll locking
+        member.addEventListener('touchstart', function(e) {
+            // Skip if touching menu or dropdown
+            if (e.target.closest('.member-menu-toggle') || e.target.closest('.member-rank-dropdown')) {
+                return;
+            }
+
+            // Set this element as being potentially dragged
+            window.potentialDragElement = this;
+
+            // Record touch position
+            window.touchStartX = e.touches[0].clientX;
+            window.touchStartY = e.touches[0].clientY;
+
+            // Clear any existing timeout
+            if (window.touchTimeout) {
+                clearTimeout(window.touchTimeout);
+            }
+
+            // Set timeout for long press = drag
+            window.touchTimeout = setTimeout(() => {
+                window.draggedElement = this;
+                this.classList.add('dragging');
+
+                // Visual feedback
+                this.style.opacity = '0.7';
+                this.style.border = '2px dashed #007bff';
+                this.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+
+                // ADDED: Lock scrolling when drag starts
+                // Save current scroll position
+                window.dragScrollPosition = [
+                    window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft,
+                    window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+                ];
+
+
+                // Haptic feedback if available
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(50);
+                }
+            }, 200);
+        }, { passive: false });
+
+        // Touch Move Handler
+        member.addEventListener('touchmove', function(e) {
+            // If we haven't identified a drag yet, check if we've moved enough to cancel the timeout
+            if (!window.draggedElement && window.touchTimeout) {
+                const touchX = e.touches[0].clientX;
+                const touchY = e.touches[0].clientY;
+                const deltaX = Math.abs(touchX - window.touchStartX);
+                const deltaY = Math.abs(touchY - window.touchStartY);
+
+                // If moved more than 10px in any direction, cancel the timeout (it's a scroll, not a drag)
+                if (deltaX > 10 || deltaY > 10) {
+                    clearTimeout(window.touchTimeout);
+                    window.touchTimeout = null;
+                    window.potentialDragElement = null;
+                }
+            }
+
+            // If we're dragging, handle the drag
+            if (window.draggedElement) {
+                e.preventDefault(); // Prevent scrolling during drag
+                e.stopPropagation();
+
+                const touch = e.touches[0];
+                const draggedEl = window.draggedElement;
+
+                // Position the element under the touch point
+                draggedEl.style.position = 'fixed';
+                draggedEl.style.zIndex = '1000';
+                draggedEl.style.left = (touch.clientX - (draggedEl.offsetWidth / 2)) + 'px';
+                draggedEl.style.top = (touch.clientY - (draggedEl.offsetHeight / 2)) + 'px';
+
+                // Find potential drop targets
+                const elemUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                // Highlight potential drop areas
+                document.querySelectorAll('.droppable-area').forEach(area => {
+                    if (area.contains(elemUnderTouch) || area === elemUnderTouch) {
+                        area.classList.add('highlight');
+                    } else {
+                        area.classList.remove('highlight');
+                    }
+                });
+            }
+        }, { passive: false });
+
+        // Touch End Handler
+        member.addEventListener('touchend', function(e) {
+            // Clear any pending timeout
+            if (window.touchTimeout) {
+                clearTimeout(window.touchTimeout);
+                window.touchTimeout = null;
+            }
+
+            // If we weren't dragging, do nothing more
+            if (!window.draggedElement) {
+                window.potentialDragElement = null;
+                return;
+            }
+
+            // ADDED: Unlock scrolling when drag ends
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+
+            // Restore scroll position
+            if (window.dragScrollPosition) {
+                window.scrollTo(window.dragScrollPosition[0], window.dragScrollPosition[1]);
+            }
+
+            // Get the touch and element under touch
+            const touch = e.changedTouches[0];
+            const draggedEl = window.draggedElement;
+            const elemUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            // Find if we're over a drop area
+            let dropArea = null;
+            document.querySelectorAll('.droppable-area').forEach(area => {
+                if (area.contains(elemUnderTouch) || area === elemUnderTouch) {
+                    dropArea = area;
+                    area.classList.remove('highlight');
+                } else {
+                    area.classList.remove('highlight');
+                }
+            });
+
+            // Get active question index for context
+            const activeQuestion = document.querySelector('.question-item.active');
+            const questionIndex = activeQuestion ? activeQuestion.dataset.questionIndex : 1;
+
+            // Handle the drop
+            if (dropArea) {
+                // Check if dropping back to the same unranked container
+                if (dropArea.id && dropArea.id.startsWith('unrankedContainer')) {
+                    const memberId = draggedEl.dataset.memberId;
+                    // If the member is already in the container, don't add it again
+                    const existingMember = dropArea.querySelector(`.draggable-member[data-member-id="${memberId}"]`);
+                    if (existingMember && existingMember !== draggedEl) {
+                        resetDraggedElementStyle(draggedEl);
+                        window.draggedElement = null;
+                        window.potentialDragElement = null;
+                        return;
+                    }
+                }
+
+                // Reset the element's style
+                resetDraggedElementStyle(draggedEl);
+
+                // Handle member placement
+                handleMemberPlacement(dropArea, draggedEl, questionIndex);
+            } else {
+                // If dropped outside valid area, reset style
+                resetDraggedElementStyle(draggedEl);
+
+                // Return to unranked container if appropriate
+                const unrankedContainer = document.getElementById(`unrankedContainer${questionIndex}`);
+                if (unrankedContainer) {
+                    const memberId = draggedEl.dataset.memberId;
+
+                    // Check if already in unranked container
+                    const existingMember = unrankedContainer.querySelector(`.draggable-member[data-member-id="${memberId}"]`);
+                    if (existingMember && existingMember !== draggedEl) {
+                        window.draggedElement = null;
+                        window.potentialDragElement = null;
+                        return;
+                    }
+
+                    // Remove from any rank boxes
+                    const totalRankings = parseInt("{{ slot.total_rankings }}") || 5;
+                    let memberRemoved = false;
+
+                    for (let i = 1; i <= totalRankings; i++) {
+                        const rankBox = document.getElementById(`rank${i}_q${questionIndex}`);
+                        if (rankBox) {
+                            const memberInRank = rankBox.querySelector(`.draggable-member[data-member-id="${draggedEl.dataset.memberId}"]`);
+                            if (memberInRank) {
+                                rankBox.removeChild(memberInRank);
+                                memberRemoved = true;
+
+                                // Show empty state
+                                const emptyState = rankBox.querySelector('.empty-state');
+                                if (emptyState) {
+                                    emptyState.style.display = 'block';
+                                }
+                            }
+                        }
+                    }
+
+                    // Only add to unranked if it was removed from somewhere else
+                    if (memberRemoved) {
+                        // Append to unranked container
+                        draggedEl.classList.remove('selected-for-rank');
+                        unrankedContainer.appendChild(draggedEl);
+                        updateNextButtonState(questionIndex);
+                    }
+                }
+            }
+
+            // Reset window variables
+            window.potentialDragElement = null;
+            window.draggedElement = null;
+
+            // Prevent default to avoid accidental clicks
+            e.preventDefault();
+        }, { passive: false });
+
+        // Touch Cancel Handler - for handling interrupted touches
+        member.addEventListener('touchcancel', function(e) {
+            // Clear any pending timeout
+            if (window.touchTimeout) {
+                clearTimeout(window.touchTimeout);
+                window.touchTimeout = null;
+            }
+
+            // If we were dragging, reset the element
+            if (window.draggedElement) {
+                resetDraggedElementStyle(window.draggedElement);
+
+                // ADDED: Unlock scrolling
+                document.body.style.overflow = '';
+                document.body.style.touchAction = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+                document.body.style.top = '';
+
+                // Restore scroll position
+                if (window.dragScrollPosition) {
+                    window.scrollTo(window.dragScrollPosition[0], window.dragScrollPosition[1]);
+                }
+
+                window.draggedElement = null;
+            }
+
+            window.potentialDragElement = null;
+        }, { passive: false });
+    });
+}
+
+// Helper function to reset dragged element style
+function resetDraggedElementStyle(element) {
+    element.style.position = '';
+    element.style.left = '';
+    element.style.top = '';
+    element.style.zIndex = '';
+    element.style.opacity = '';
+    element.style.border = '';
+    element.style.backgroundColor = '';
+    element.classList.remove('dragging');
+}
+
+
+    function unlockScrolling() {
+    // Remember current scroll position first
+    const currentScrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Only do this if we previously locked scrolling
+    if (window.dragScrollPosition) {
+        // Get the locked position
+        const scrollX = window.dragScrollPosition[0];
+        const scrollY = window.dragScrollPosition[1];
+
+        // Reset all body styles in the correct order
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.top = '';
+        document.body.style.touchAction = '';
+        document.body.style.overflow = '';
+
+        // Use the most recent position that makes sense
+        const targetX = (currentScrollX > 0) ? currentScrollX : scrollX;
+        const targetY = (currentScrollY > 0) ? currentScrollY : scrollY;
+
+        // Restore the scroll position
+        window.scrollTo(targetX, targetY);
+
+        // Clear the stored position
+        window.dragScrollPosition = null;
+    }
+}
+
+
+
+// A function to completely reset drag state
+function resetDragState() {
+    // Clear any pending timeout
+    if (window.touchTimeout) {
+        clearTimeout(window.touchTimeout);
+        window.touchTimeout = null;
+    }
+
+    // Reset any dragged element
+    if (window.draggedElement) {
+        resetDraggedElementStyle(window.draggedElement);
+        window.draggedElement = null;
+    }
+
+    // Unlock scrolling if locked
+    unlockScrolling();
+
+    // Reset other state variables
+    window.potentialDragElement = null;
+    window.isDropdownTouch = false;
+}
+
+function handleTouchStart(e) {
+    // Skip if touching menu or dropdown
+    if (e.target.closest('.member-menu-toggle') || e.target.closest('.member-rank-dropdown')) {
+        return;
+    }
+
+    // Record touch position for later movement check
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    // Start drag immediately without any timeout
+    draggedElement = this;
+    this.classList.add('dragging');
+    this.style.opacity = '0.7';
+    this.style.zIndex = '1000';
+
+    // Close all dropdowns
+    document.querySelectorAll('.member-rank-dropdown').forEach(dropdown => {
+        dropdown.style.display = 'none';
+    });
+
+    // Haptic feedback if available
+    if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(25); // Shorter vibration
+    }
+}
+
+// Simplified touch move handler
+function handleTouchMove(e) {
+    if (!draggedElement) return;
+
+    // Prevent default to avoid scrolling while dragging
+    e.preventDefault();
+
+    const touch = e.touches[0];
+
+    // Move the element with the touch
+    draggedElement.style.position = 'absolute';
+    draggedElement.style.left = (touch.pageX - (draggedElement.offsetWidth / 2)) + 'px';
+    draggedElement.style.top = (touch.pageY - (draggedElement.offsetHeight / 2)) + 'px';
+
+    // Find element under touch
+    const elemUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+
+    // Highlight drop areas
+    document.querySelectorAll('.droppable-area').forEach(area => {
+        if (area.contains(elemUnderTouch) || area === elemUnderTouch) {
+            area.classList.add('highlight');
+        } else {
+            area.classList.remove('highlight');
+        }
+    });
+}
+
+// Simplified touch end handler
+function handleTouchEnd(e) {
+    if (!draggedElement) return;
+
+    e.preventDefault();
+
+    const touch = e.changedTouches[0];
+    const elemUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+
+    // Find if we're over a drop area
+    let dropArea = null;
+    document.querySelectorAll('.droppable-area').forEach(area => {
+        if (area.contains(elemUnderTouch) || area === elemUnderTouch) {
+            dropArea = area;
+        }
+        area.classList.remove('highlight');
+    });
+
+    // Reset element style
+    resetDraggedElementStyle(draggedElement);
+
+    // Get question index
+    const activeQuestion = document.querySelector('.question-item.active');
+    const questionIndex = activeQuestion ? activeQuestion.dataset.questionIndex : 1;
+
+    // Handle the drop
+    if (dropArea) {
+        handleMemberPlacement(dropArea, draggedElement, questionIndex);
+    }
+
+    // Reset state
+    draggedElement = null;
+}
+
+    /**
+     * Initialize question navigation
+     */
+    function initQuestionNavigation() {
+    // Handle next question buttons
+    document.querySelectorAll('.next-question').forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            if (button.disabled) return;
+
+            // Get current question index
+            const currentQuestion = parseInt(document.querySelector('.question-item.active').dataset.questionIndex);
+            const targetQuestion = currentQuestion + 1;
+
+            // Stop the current timer and clear its state
+            if (questionTimers[currentQuestion]) {
+                clearInterval(questionTimers[currentQuestion]);
+            }
+            clearTimerState(currentQuestion);
+
+            // Check if this is the finish button
+            const isFinishButton = this.textContent.includes('Finish');
+
+            if (isFinishButton) {
+                // This is the last question/finish button
+                console.log("Finish button clicked, showing waiting container");
+                lockPageScroll(false);
+
+                const questionsContainer = document.getElementById('questionsContainer');
+                const waitingContainer = document.getElementById('waitForResultsContainer');
+
+                if (questionsContainer) {
+                    questionsContainer.style.display = 'none';
+                }
+
+                if (waitingContainer) {
+                    waitingContainer.style.display = 'block';
+
+                    // Scroll to top to show the waiting container
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+
+                return;
+            }
+
+            // Continue with regular question navigation for non-finish buttons
+            // Update URL without page reload
+            history.pushState(null, '', `?question=${targetQuestion}`);
+
+            // Hide current question
+            document.querySelector(`.question-item[data-question-index="${currentQuestion}"]`).classList.add('d-none');
+            document.querySelector(`.question-item[data-question-index="${currentQuestion}"]`).classList.remove('active');
+
+            // Show target question
+            const targetQuestionEl = document.querySelector(`.question-item[data-question-index="${targetQuestion}"]`);
+            if (targetQuestionEl) {
+                targetQuestionEl.classList.remove('d-none');
+                targetQuestionEl.classList.add('active');
+
+                // Start timer for the new question immediately
+                startQuestionTimer(targetQuestion);
+
+                // Scroll to the bottom of the question container
+                setTimeout(() => {
+                    const scrollContainer = document.querySelector('#questionsContainer');
+                    if (scrollContainer) {
+                        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+                    }
+                    window.scrollTo({
+                        top: document.documentElement.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }, 50);
+            }
+        });
+    });
+
+    // Handle initial page load with question parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialQuestion = urlParams.get('question');
+
+    if (initialQuestion) {
+        const targetQuestion = parseInt(initialQuestion);
+        const currentActiveQuestion = parseInt(document.querySelector('.question-item.active').dataset.questionIndex);
+
+        if (targetQuestion !== currentActiveQuestion) {
+            // Hide current question
+            document.querySelector(`.question-item[data-question-index="${currentActiveQuestion}"]`).classList.add('d-none');
+            document.querySelector(`.question-item[data-question-index="${currentActiveQuestion}"]`).classList.remove('active');
+
+            // Show target question
+            const targetQuestionEl = document.querySelector(`.question-item[data-question-index="${targetQuestion}"]`);
+            if (targetQuestionEl) {
+                targetQuestionEl.classList.remove('d-none');
+                targetQuestionEl.classList.add('active');
+                startQuestionTimer(targetQuestion);
+            }
+        }
+    } else {
+        // No question parameter - start timer for the active question
+        const activeQuestion = document.querySelector('.question-item.active');
+        if (activeQuestion) {
+            startQuestionTimer(activeQuestion.dataset.questionIndex);
+        }
+    }
+}
+
+    // Clean up when leaving the page
+    window.addEventListener('beforeunload', function() {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+
+        // Clear all question timers
+        Object.keys(questionTimers).forEach(key => {
+            if (questionTimers[key]) {
+                clearInterval(questionTimers[key]);
+            }
+        });
+    });
+
+    // Add styles for better visualization
+    const styles = document.createElement('style');
+    styles.textContent = `
+        /* Draggable member styles */
+        .draggable-member {
+            cursor: grab;
+            transition: all 0.2s;
+            pointer-events: none;
+        }
+
+        .draggable-member .member-menu-toggle,
+        .draggable-member .member-rank-dropdown {
+            pointer-events: auto;
+        }
+
+        .draggable-member.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
+            opacity: 0.7;
+            border: 2px dashed #007bff;
+            background-color: rgba(0, 123, 255, 0.1) !important;
+        }
+
+        .draggable-member.selected-for-rank {
+            background-color: #e8f4ff !important;
+        }
+
+        .draggable-member.voted {
+            cursor: default;
+            opacity: 0.7;
+        }
+
+        /* Droppable area styles */
+        .droppable-area {
+            transition: all 0.2s;
+        }
+
+        .droppable-area.highlight {
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+
+        .droppable-area.submitted {
+            background-color: #f8f9fa !important;
+            pointer-events: none;
+        }
+
+        .dropdown-header {
+            background-color: #f1f1f1 !important;
+            color: #333 !important;
+            font-weight: bold !important;
+            padding: 10px 15px !important;
+        }
+
+        /* Rank box styles */
+        .rank-box:nth-child(1) .droppable-area {
+            border-color: #ffc107 !important;
+            background-color: rgba(255, 193, 7, 0.05);
+        }
+
+        .rank-box:nth-child(2) .droppable-area {
+            border-color: #6c757d !important;
+            background-color: rgba(108, 117, 125, 0.05);
+        }
+
+        .rank-box:nth-child(3) .droppable-area {
+            border-color: #cd7f32 !important;
+            background-color: rgba(205, 127, 50, 0.05);
+        }
+
+        /* Copper color definition */
+        .bg-copper {
+            background-color: #cd7f32;
+        }
+
+        .text-copper {
+            color: #cd7f32;
+        }
+
+        /* Timer styles */
+        .timer-container {
+            padding: 8px 12px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .timer-display {
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-display.text-danger {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Dropdown menu styles */
+        .member-menu-toggle {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+
+
+        .member-menu-toggle:hover {
+            opacity: 1;
+            background-color: #fff;
+        }
+
+        .member-rank-dropdown {
+
+            min-width: 160px;
+            max-width: 90vw;
+            z-index: 1050;
+            background-color: white ;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid #dee2e6 !important;
+            min-width: 180px !important;
+            z-index: 1050 !important;
+        }
+
+        .rank-option {
+           padding: 10px 15px ;
+            border-bottom: 1px solid #e9ecef ;
+            cursor: pointer !important;
+            background-color: red ;
+
+        }
+
+        .rank-option:last-child {
+            border-bottom: none;
+        }
+
+        .rank-option:hover {
+            background-color: #f0f7ff;
+        }
+
+        .rank-option.disabled {
+            color: #adb5bd;
+            cursor: not-allowed;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .rank-option {
+                padding: 12px 15px; /* Larger touch targets */
+            }
+
+            .member-menu-toggle {
+                width: 32px;
+                height: 32px;
+            }
+
+            /* Prevent body scrolling when dropdown is open */
+            body.dropdown-open {
+                overflow: hidden;
+            }
+        }
+
+        /* Empty state message */
+        .empty-state {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+
+        /* Question message (success message) */
+        #questionMessage {
+            transition: opacity 0.3s;
+        }
+    `;
+    document.head.appendChild(styles);
+});
+
+    document.addEventListener('DOMContentLoaded', function() {
+    enhanceTouchHandling();
+});
+
+    // Additional CSS to ensure the dropdown has proper styling
+const addDropdownStyles = () => {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+        .member-rank-dropdown {
+            background-color: white !important;
+            opacity: 1 !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid #dee2e6 !important;
+            min-width: 180px !important;
+            z-index: 1050 !important;
+        }
+
+        .dropdown-header {
+            background-color: #f1f1f1 !important;
+            color: #333 !important;
+            font-weight: bold !important;
+            padding: 10px 15px !important;
+        }
+
+        .rank-option {
+            padding: 10px 15px !important;
+            border-bottom: 1px solid #e9ecef !important;
+            cursor: pointer !important;
+            background-color: white !important;
+            opacity: 1 !important;
+        }
+
+        .rank-option:hover {
+            background-color: #f0f7ff !important;
+        }
+    `;
+    document.head.appendChild(styleEl);
+};
+
+// Call this function early in your DOMContentLoaded handler
+document.addEventListener('DOMContentLoaded', function() {
+    // Add the dropdown styles right away
+    addDropdownStyles();
+
+});
+</script>
+{% endblock content %}

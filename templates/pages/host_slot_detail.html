@@ -1,0 +1,1995 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Host Slot - {{ slot.slot_id }} {% endblock title %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+{% block content %}
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="container ">
+            <!-- Header with back button -->
+            <div class="row ">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h2 class="fw-bold d-inline-block mb-0">Host Slot Details</h2>
+                                </div>
+                                <div >
+                                    <button type="button" class="btn btn-warning btn-clock-history gap-3 ">
+                                        <i class="bi bi-clock-history me-1"></i>
+                                    </button>
+
+                                    <button type="button" class="btn btn-primary gap-2 " data-bs-toggle="modal" data-bs-target="#addGroupModal">
+                                        <i class="feather icon-plus me-1"></i>Add Group
+                                    </button>
+
+                                    <!-- Toggle Status Button -->
+                                    <form method="post" class="d-inline-block">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_slot_status">
+                                        <button type="submit" class=" gap-2 btn btn-{% if slot.slot_status == 'live' %}success{% else %}danger{% endif %}">
+                                            <i class="feather icon-{% if slot.slot_status == 'live' %}activity{% else %}lock{% endif %} me-1"></i>
+                                            {% if slot.slot_status == 'live' %}Slot is Live{% else %}Slot is Expired{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slot Summary Card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4 class="fw-bold mb-0">Slot Summary</h4>
+                                <span class=" fw-bold fs-6 badge {% if slot.slot_status == 'live' %}bg-success{% else %}bg-danger{% endif %} text-white">
+                                    {{ slot.get_slot_status_display }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3 mb-md-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                            <i class="feather icon-hash text-primary" style="font-size: 24px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1 fw-bold">Slot ID</h6>
+                                            <h5 class="mb-0 fw-bold">{{ slot.slot_id }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 mb-3 mb-md-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                            <i class="feather icon-users text-primary" style="font-size: 24px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1 fw-bold">Total Groups</h6>
+                                            <h5 class="mb-0 fw-bold">{{ groups_list|length }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                            <i class="feather icon-user text-primary" style="font-size: 24px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1 fw-bold">Total Participants</h6>
+                                            <h5 class="mb-0 fw-bold">{{ total_participants }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6 mb-2 mb-md-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="feather icon-calendar text-primary me-2"></i>
+                                        <span><strong>Created:</strong> {{ slot.created_at|date:"d M Y, H:i" }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center">
+                                        <i class="feather icon-user text-primary me-2"></i>
+                                        <span><strong>Created by:</strong> {{ slot.created_by.name }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Groups Grid -->
+            <div class="row mb-2">
+                <div class="col-12">
+                    <h4><i class="feather icon-users me-2"></i>Groups</h4>
+                </div>
+            </div>
+
+            <div class="row">
+                {% for group in groups_list %}
+                    {% if not group.finished and group.start_status != 'end' %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm hover-card" data-group-id="{{ group.id }}">
+                            <!-- Card Header with Group Name and Action Buttons -->
+                            <div class="card-header {% if group.start_status == 'start' %}bg-success{% elif group.start_status == 'pause' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="fw-bold mb-0 fs-3 text-black">{{ group.group_name }}</h5>
+                                    <div>
+                                        <!-- QR Code Button -->
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#qrCodeModal{{ group.id }}">
+                                            <i class="bi bi-qr-code-scan"></i>
+                                        </button>
+
+                                        <!-- Edit Group Button -->
+                                        <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editGroupModal{{ group.id }}">
+                                            <i class="feather icon-edit-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Body with Group Members Status and Controls -->
+                            <div class="card-body">
+                                <!-- Group Info Section -->
+                                <div class="mb-3 border-bottom pb-3">
+                                    <div class="row g-2">
+                                        <div class="col-md-12">
+                                            <div class="d-flex align-items-center">
+                                                <i class="feather icon-calendar text-primary me-2"></i>
+                                                <div>
+                                                    <div class="text-muted small fw-bold">Event</div>
+                                                    <div class="fw-medium">{{ group.event.event_name }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center">
+                                                <i class="feather icon-layers text-success me-2"></i>
+                                                <div>
+                                                    <div class="text-muted small fw-bold">Level</div>
+                                                    <div class="fw-medium">Level {{ group.level.level }}: {{ group.level.name }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center">
+                                                <i class="feather icon-book-open text-warning me-2"></i>
+                                                <div>
+                                                    <div class="text-muted small fw-bold">Topic</div>
+                                                    <div class="fw-medium">{{ group.topic.topic_name|default:"No topic assigned" }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Group Status Banner -->
+                                <div class="alert {% if group.filled_capacity == 0 %}alert-secondary{% elif group.start_status == 'pause' %}alert-warning{% elif group.start_status == 'start' %}alert-success{% else %}alert-secondary{% endif %} mb-3 py-2">
+                                    <div class="d-flex align-items-center ">
+
+                                        <i class="feather {% if group.filled_capacity == 0 %}icon-alert-circle{% elif group.start_status == 'pause' %}icon-pause-circle{% elif group.start_status == 'start' %}icon-play-circle{% else %}icon-alert-circle{% endif %} me-2"></i>
+                                        <span>
+                                            {% if group.filled_capacity == 0 %}
+                                            <div><strong>No participants</strong> in this group</div>
+                                            {% if slot.slot_status == 'expired' %}
+                                            <div class="text-danger mt-1"><strong>Slot not Live</strong></div>
+                                            {% endif %}
+                                            {% elif group.start_status == 'pause' %}
+                                                <strong>Group paused</strong> - {{ group.filled_capacity }} participant(s)
+                                            {% elif group.start_status == 'start' %}
+                                                <strong>Group started</strong> - {{ group.filled_capacity }} participant(s)
+                                            {% else %}
+                                                <strong>Group status:</strong> {{ group.start_status }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if group.filled_capacity == 0 and slot.slot_status == 'live' and not group.finished %}
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateStartStatus('{{ group.id }}', 'pause')">
+                                            <i class="feather icon-refresh-cw me-1"></i>Restart Group
+                                        </button>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Group Members Table (only show if there are members) -->
+                                {% if group.filled_capacity > 0 %}
+                                <div class="mb-3">
+                                    <h6 class="text-primary mb-2">Group Members</h6>
+                                    <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="table-light sticky-top" style="position: sticky; top: 0; z-index: 1;">
+                                                <tr>
+                                                    <th>Member</th>
+                                                    <th class="text-center">Join Status</th>
+                                                    <th class="text-center">Vote Status</th>
+                                                    <th class="text-center">Progress</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for participant in all_participants %}
+                                                    {% if participant.group_name == group.group_name %}
+                                                    <tr>
+                                                        <!-- Member Info -->
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                {% if participant.user.photo %}
+                                                                <img src="{{ participant.user.photo.url }}" alt="{{ participant.user.name }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                                                {% else %}
+                                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                                    <i class="feather icon-user text-secondary" style="font-size: 12px;"></i>
+                                                                </div>
+                                                                {% endif %}
+                                                                <div class="small lh-sm">
+                                                                    <div class="fw-medium text-truncate fw-bold" style="max-width: 120px;">{{ participant.user.name }}</div>
+                                                                    <div class="text-muted small fw-bold">
+                                                                        {% if participant.user.roll_number %}
+                                                                            {{ participant.user.roll_number }}
+                                                                        {% elif participant.user.staff_id %}
+                                                                            {{ participant.user.staff_id }}
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        <!-- Join Status -->
+                                                        <td class="text-center align-middle">
+                                                            {% if participant.joined %}
+                                                                <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                            {% else %}
+                                                                <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                            {% endif %}
+                                                        </td>
+
+                                                        <!-- Vote Status -->
+                                                        <td class="text-center align-middle">
+                                                            {% if participant.voting_status == 'finished' or participant.voting_progress.current_question > group.level.total_questions %}
+                                                                <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                            {% elif participant.voting_status == 'in_progress' %}
+                                                                <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                            {% elif participant.voting_progress.request_voting == 'request' %}
+                                                                <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                            {% else %}
+                                                                <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                            {% endif %}
+                                                        </td>
+
+                                                        <!-- Progress -->
+                                                        <td class="text-center align-middle">
+                                                            {% if participant.voting_status == 'in_progress' or participant.voting_status == 'finished' %}
+                                                                {% with current_q=participant.voting_progress.current_question|default:0 %}
+                                                                {% with total_q=participant.actual_total_questions %}
+                                                                  <div class="d-flex justify-content-center gap-1">
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px;"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.2s"></div>
+                                                                    <div class="spinner-grow spinner-grow-sm text-primary" role="status" style="width: 5px; height: 5px; animation-delay: 0.4s"></div>
+                                                                  </div>
+                                                                {% endwith %}
+                                                                {% endwith %}
+                                                            {% else %}
+                                                                <span class="text-muted small">—</span>
+                                                            {% endif %}
+                                                        </td>
+
+                                                    </tr>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <!-- Action Buttons - Only show if there are participants -->
+                                {% if group.filled_capacity > 0 %}
+                                <div class="d-flex flex-column gap-2">
+                                    <!-- Group Control Row -->
+                                    <div class="d-flex mb-2">
+                                        {% csrf_token %}
+                                        {% if group.start_status == 'pause' %}
+                                            <button type="button" class="btn btn-sm btn-success flex-grow-1"
+                                                    onclick="updateStartStatus('{{ group.id }}', 'start')"
+                                                    {% if group.filled_capacity < 6 %}disabled{% endif %}
+                                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                                    title="{% if group.filled_capacity < 6 %}Need at least 6 participants to start{% else %}Start the group so everyone can join{% endif %}">
+                                                <i class="feather icon-play me-1"></i>Start Group
+                                            </button>
+                                        {% elif slot.slot_status == 'expired' and  group.start_status == 'end' and  not group.finished %}
+                                        <!-- Slot is expired - can't reset -->
+                                        <button type="button" class="btn btn-sm btn-secondary flex-grow-1" disabled
+                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="Group not live to reset">
+                                            <i class="feather icon-refresh-cw me-1"></i>Restart Group
+                                        </button>
+
+                                        {% elif group.start_status == 'start' %}
+                                            <button type="button" class="btn btn-sm btn-warning flex-grow-1"
+                                                    onclick="updateStartStatus('{{ group.id }}', 'pause')">
+                                                <i class="feather icon-pause me-1"></i>Pause Group
+                                            </button>
+
+
+
+                                        {% elif slot.slot_status == 'expired' %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger flex-grow-1">
+                                                <i class="bi bi-exclamation-octagon me-1"></i>Group's slot not live
+                                            </button>
+
+
+
+                                        {% elif not slot.slot_status == 'expired' %}
+                                            <button type="button" class="btn btn-sm btn-secondary flex-grow-1"
+                                                    onclick="updateStartStatus('{{ group.id }}', 'pause')">
+                                                <i class="feather icon-refresh-cw me-1"></i>Restart Group.
+                                            </button>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Voting Control Row -->
+                                    <div class="d-flex mb-2">
+                                        {% if group.start_status == 'start' %}
+                                            {% if group.voting_count > 0 or group.completed_count > 0 %}
+                                                <!-- Voting in progress or completed -->
+                                                <button type="button" class="btn btn-sm btn-warning flex-grow-1"
+                                                        onclick="pauseVoting('{{ group.id }}')">
+                                                    <i class="feather icon-pause-circle me-1"></i>Pause Voting
+                                                </button>
+                                            {% else %}
+                                                <!-- Ready to start voting -->
+                                                <button type="button" class="btn btn-sm btn-primary flex-grow-1"
+                                                        onclick="startVoting('{{ group.id }}')"
+                                                        {% if group.joined_count < group.filled_capacity %}disabled{% endif %}
+                                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                                        title="{% if group.joined_count < group.filled_capacity %}Waiting for all members to join ({{ group.joined_count }}/{{ group.filled_capacity }}){% else %}All members have joined{% endif %}">
+                                                    <i class="feather icon-check-square me-1"></i>Start Voting
+                                                </button>
+                                            {% endif %}
+                                        {% else %}
+                                            <!-- Group not started - Voting disabled -->
+                                            <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" disabled>
+                                                <i class="feather icon-check-square me-1"></i>Start Voting
+                                            </button>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Results Control Row -->
+                                    <div class="d-flex">
+                                        {% if group.results_published %}
+                                            <!-- Results already published -->
+                                            <div class="d-flex gap-2 w-100">
+                                                <button type="button" class="btn btn-sm btn-outline-success flex-grow-1" disabled>
+                                                    <i class="feather icon-check-circle me-1"></i>Results Published
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1"
+                                                        data-bs-toggle="modal" data-bs-target="#resultsModal{{ group.id }}">
+                                                    <i class="feather icon-award me-1"></i>View Results
+                                                </button>
+                                                {% if group.metadata and group.metadata.analytics_report %}
+                                                    <a href="/reports/${reportFilename}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="feather icon-download me-1"></i>Report
+                                        </a>
+                                                {% endif %}
+                                            </div>
+                                        {% elif group.all_participants_completed and group.filled_capacity > 0 %}
+                                            <!-- All members completed voting but results not published -->
+                                            <button type="button" class="btn btn-sm btn-success flex-grow-1"
+                                                    onclick="publishResults('{{ group.id }}')">
+                                                <i class="feather icon-award me-1"></i>Publish Results
+                                            </button>
+                                        {% else %}
+                                            <!-- Not all members have completed voting -->
+                                            <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" disabled>
+                                                <i class="feather icon-award me-1"></i>Waiting for Completion ({{ group.completed_count }}/{{ group.filled_capacity }})
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if group.filled_capacity < 6 %}
+                                    <p class="small text-danger mt-3 mb-0"><i class="feather icon-alert-circle me-1"></i>Need at least 6 participants to start</p>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+
+
+
+                    <!-- Results Modal for Each Group -->
+                    <div class="modal fade" id="resultsModal{{ group.id }}" tabindex="-1" aria-labelledby="resultsModalLabel{{ group.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="resultsModalLabel{{ group.id }}">
+                                        Results for Group {{ group.group_name }}
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-center">Rank</th>
+                                                    <th>Member</th>
+                                                    <th class="text-center">Points</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for member in group.ranked_members %}
+                                                <tr>
+                                                    <td class="text-center">
+                                                        <div class="d-flex align-items-center justify-content-center">
+                                                            {% if forloop.counter == 1 %}
+                                                            <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                                                <i class="feather icon-award text-white"></i>
+                                                            </div>
+                                                            {% elif forloop.counter == 2 %}
+                                                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                                                <i class="feather icon-award text-white"></i>
+                                                            </div>
+                                                            {% elif forloop.counter == 3 %}
+                                                            <div class="rounded-circle bg-copper d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                                                <i class="feather icon-award text-white"></i>
+                                                            </div>
+                                                            {% else %}
+                                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                                                <span class="fw-bold">{{ forloop.counter }}</span>
+                                                            </div>
+                                                            {% endif %}
+                                                            <span>{{ forloop.counter }}{% if forloop.counter == 1 %}st{% elif forloop.counter == 2 %}nd{% elif forloop.counter == 3 %}rd{% else %}th{% endif %}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            {% if member.user.photo %}
+                                                            <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                                            {% else %}
+                                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                                <i class="feather icon-user text-secondary"></i>
+                                                            </div>
+                                                            {% endif %}
+                                                            <div>
+                                                                <div class="fw-medium">{{ member.user.name }}</div>
+                                                                <div class="text-muted small">
+                                                                    {% if member.user.roll_number %}
+                                                                        {{ member.user.roll_number }}
+                                                                    {% else %}
+                                                                        {{ member.user.staff_id|default:"" }}
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center align-middle">
+                                                        <span class="fw-bold">{{ member.mark }}</span>
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="3" class="text-center py-3">No results available</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Group Modal -->
+                    <div class="modal fade" id="editGroupModal{{ group.id }}" tabindex="-1" aria-labelledby="editGroupModalLabel{{ group.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header {% if group.start_status == 'start' %}bg-success{% elif group.start_status == 'pause' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                                    <h5 class="modal-title" id="editGroupModalLabel{{ group.id }}">Edit Group: {{ group.group_name }}</h5>
+                                    <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="edit_group">
+                                    <input type="hidden" name="group_id" value="{{ group.id }}">
+                                    <div class="modal-body">
+                                        <!-- Group Name (Read-only) -->
+                                        <div class="row">
+                                            <div class="col-md-12 mb-3">
+                                                <label for="group_name{{ group.id }}" class="form-label">Group Name</label>
+                                                <input type="text" class="form-control bg-light" id="group_name{{ group.id }}" value="{{ group.group_name }}" readonly>
+                                                <input type="hidden" name="group_name" value="{{ group.group_name }}">
+                                            </div>
+                                        </div>
+
+                                        <!-- Event and Level -->
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="event{{ group.id }}" class="form-label">Event</label>
+                                                {% if group.start_status == 'start' %}
+                                                    <input type="text" class="form-control bg-light" value="{{ group.event.event_name }}" readonly>
+                                                    <input type="hidden" name="event" value="{{ group.event.id }}">
+                                                {% else %}
+                                                    <select class="form-select" id="event{{ group.id }}" name="event" required>
+                                                        <option value="">Select Event</option>
+                                                        {% for event in all_events %}
+                                                            <option value="{{ event.id }}" {% if group.event.id == event.id %}selected{% endif %}>{{ event.event_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="level{{ group.id }}" class="form-label">Level</label>
+                                                {% if group.start_status == 'start' %}
+                                                    <input type="text" class="form-control bg-light" value="Level {{ group.level.level }} - {{ group.level.name }}" readonly>
+                                                    <input type="hidden" name="level" value="{{ group.level.id }}">
+                                                {% else %}
+                                                    <select class="form-select" id="level{{ group.id }}" name="level" required>
+                                                        <option value="">Select Level</option>
+                                                        {% for level in all_levels %}
+                                                            {% if level.event.id == group.event.id %}
+                                                                <option value="{{ level.id }}" {% if group.level.id == level.id %}selected{% endif %}>Level {{ level.level }} - {{ level.name }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <!-- Topic and Date -->
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="topic{{ group.id }}" class="form-label">Topic</label>
+                                                {% if group.start_status == 'start' %}
+                                                    <input type="text" class="form-control bg-light" value="{% if group.topic %}{{ group.topic.topic_name }}{% else %}Random Topic{% endif %}" readonly>
+                                                    <input type="hidden" name="topic" value="{% if group.topic %}{{ group.topic.id }}{% endif %}">
+                                                {% else %}
+                                                    <select class="form-select" id="topic{{ group.id }}" name="topic">
+                                                        <option value="">Random Topic</option>
+                                                        {% for topic in all_topics %}
+                                                            {% if topic.level.id == group.level.id %}
+                                                                <option value="{{ topic.id }}" {% if group.topic and group.topic.id == topic.id %}selected{% endif %}>{{ topic.topic_name|truncatechars:30 }}</option>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </select>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="date{{ group.id }}" class="form-label">Date</label>
+                                                <input type="date" class="form-control" id="date{{ group.id }}" name="date"
+                                                    value="{{ group.date|date:'Y-m-d' }}"
+                                                    {% if group.start_status == 'start' %}readonly{% endif %}>
+                                            </div>
+                                        </div>
+
+                                        <!-- Start Time and End Time -->
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="start_time{{ group.id }}" class="form-label">Start Time</label>
+                                                <input type="time" class="form-control" id="start_time{{ group.id }}" name="start_time"
+                                                    value="{{ group.start_time|time:'H:i' }}"
+                                                    {% if group.start_status == 'start' %}readonly{% endif %}>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="end_time{{ group.id }}" class="form-label">End Time</label>
+                                                <input type="time" class="form-control" id="end_time{{ group.id }}" name="end_time"
+                                                    value="{{ group.end_time|time:'H:i' }}"
+                                                    {% if group.start_status == 'start' %}readonly{% endif %}>
+                                                <small class="text-muted">Auto-calculated based on level duration if left empty</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Participants List -->
+                                        <h5 class="mt-4 mb-3">Participants</h5>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>ID</th>
+                                                        <th>Status</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for participant in all_participants %}
+                                                        {% if participant.group_name == group.group_name %}
+                                                            <tr>
+                                                                <td>{{ participant.user.name }}</td>
+                                                                <td>{{ participant.user.roll_number|default:participant.user.staff_id }}</td>
+                                                                <td>
+                                                                    {% if participant.voting_status == 'in_progress' %}
+                                                                        <span class="badge bg-primary">Voting</span>
+                                                                    {% elif participant.voting_status == 'finished' %}
+                                                                        <span class="badge bg-success">Completed</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-secondary">Not Started</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                   {% if group.start_status != 'start' and participant.voting_status != 'in_progress' %}
+                                                                        <button type="button" class="btn btn-sm btn-danger"
+                                                                            onclick="removeParticipant('{{ participant.id }}', '{{ group.id }}')">
+                                                                            <i class="feather icon-x-circle"></i>
+                                                                        </button>
+                                                                    {% else %}
+                                                                        <button type="button" class="btn btn-sm btn-warning" disabled>
+                                                                            <i class="feather icon-x-circle"></i>
+                                                                        </button>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        {% if group.start_status != 'start' and not group.finished %}
+                                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteGroupModal{{ group.id }}" data-bs-dismiss="modal">
+                                            <i class="feather icon-trash-2 me-1"></i>Delete Group
+                                        </button>
+                                        <button type="button" class="btn btn-warning" onclick="resetGroup('{{ group.id }}')" data-bs-dismiss="modal">
+                                            <i class="feather icon-refresh-cw me-1"></i>Reset/Erase Group
+                                        </button>
+                                        {% endif %}
+
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        {% if group.start_status != 'start' %}
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="feather icon-save me-1"></i>Save Changes
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- QR Code Modal -->
+                    <div class="modal fade" id="qrCodeModal{{ group.id }}" tabindex="-1" aria-labelledby="qrCodeModalLabel{{ group.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header {% if group.start_status == 'start' %}bg-success{% elif group.start_status == 'pause' %}bg-warning{% else %}bg-secondary{% endif %} text-white">
+                                    <h5 class="modal-title fw-bold" id="qrCodeModalLabel{{ group.id }}">Group QR Code</h5>
+                                    <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <!-- Group Info Card -->
+                                        <div class="col-md-5">
+                                            <div class="card h-100">
+                                                <div class="card-body p-3">
+                                                    <h5 class="card-title fw-bold mb-3 text-dark">{{ group.group_name }}</h5>
+                                                   <p class="card-text fs-7 mb-1">
+                                                      <strong class="fw-bold text-dark">ID:</strong>
+                                                      <span class="text-danger fw-bold">{{ slot.slot_id }}/{{ group.group_name }}</span>
+                                                    </p>
+
+                                                    {% if group.event %}
+                                                    <p class="card-text small mb-1"><strong>Event:</strong> {{ group.event.event_name }}</p>
+                                                    {% endif %}
+
+                                                    {% if group.level %}
+                                                    <p class="card-text small mb-1"><strong>Level:</strong> Level {{ group.level.level }}{% if group.level.name %} - {{ group.level.name }}{% endif %}</p>
+                                                    {% endif %}
+
+                                                    <p class="card-text small mb-1 mt-3"><strong>Link:</strong></p>
+                                                    <div class="input-group input-group-sm mt-1">
+                                                        <input type="text " class=" fw-bold text-dark form-control form-control-sm" value="{{ slot.slot_id }}/{{ group.group_name }}" id="qrLink{{ group.id }}" readonly>
+                                                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('qrLink{{ group.id }}')">
+                                                            <i class="feather icon-copy"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- QR Code Column -->
+                                        <div class="col-md-7 d-flex align-items-center justify-content-center">
+                                            <div class="p-3 border rounded bg-light">
+                                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ slot.slot_id }}/{{ group.group_name }}"
+                                                 alt="QR Code for {{ slot.slot_id }}/{{ group.group_name }}"
+                                                 class="img-fluid" style="width: 200px; height: 200px;">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 text-center">
+                                        <p class="small text-muted mb-2">Scan this QR code to join this specific group</p>
+                                        <a href="javascript:void(0);" class="btn btn-sm btn-primary" onclick="downloadQR('{{ slot.slot_id }}/{{ group.group_name }}', '{{ group.group_name }}')">
+                                            <i class="feather icon-download me-1"></i>Download QR
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete Group Confirmation Modal -->
+                    <div class="modal fade" id="deleteGroupModal{{ group.id }}" tabindex="-1" aria-labelledby="deleteGroupModalLabel{{ group.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="deleteGroupModalLabel{{ group.id }}">Delete Group</h5>
+                                    <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete the group <strong>{{ group.group_name }}</strong>?</p>
+                                    <p class="text-danger">This action cannot be undone! All participants in this group will be removed.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-danger" onclick="deleteGroup('{{ group.id }}')">
+                                        <i class="feather icon-trash-2 me-1"></i>Delete Group
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% endif %}
+                {% empty %}
+                <div class="col-12">
+                        <div class="alert alert-info">
+                            <p class="mb-0">No groups have been created yet.</p>
+                        </div>
+                    </div>
+
+
+                {% endfor %}
+
+
+            </div>
+
+            <!-- Ended Groups History Modal -->
+                <div class="modal fade" id="endedGroupsHistoryModal" tabindex="-1" aria-labelledby="endedGroupsHistoryModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title" id="endedGroupsHistoryModalLabel">
+                                    <i class="bi bi-clock-history me-2"></i>Ended Groups History
+                                </h5>
+                                <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" id="endedGroupsContainer">
+                                <!-- Content will be dynamically populated via JavaScript -->
+                                <div id="loadingSpinner" class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Loading ended groups...</p>
+                                </div>
+                                <div id="endedGroupsContent" style="display: none;">
+                                    <!-- Dynamically generated content will go here -->
+                                </div>
+                                <div id="noEndedGroupsMessage" style="display: none;" class="alert alert-info text-center">
+                                    No ended groups found for this slot.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Add Group Modal -->
+<div class="modal fade" id="addGroupModal" tabindex="-1" aria-labelledby="addGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addGroupModalLabel">Add New Group</h5>
+                <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_group">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="new_group_name" class="form-label">Group Name (Optional)</label>
+                            <input type="text" class="form-control" id="new_group_name" name="group_name" placeholder="Leave blank for auto-generated name">
+                            <div class="form-text">If left blank, a name will be generated automatically.</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="new_event" class="form-label">Event <span class="text-danger">*</span></label>
+                            <select class="form-select" id="new_event" name="event" required>
+                                <option value="">Select Event</option>
+                                {% for event in all_events %}
+                                <option value="{{ event.id }}">{{ event.event_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="new_level" class="form-label">Level <span class="text-danger">*</span></label>
+                            <select class="form-select" id="new_level" name="level" required>
+                                <option value="">Select Level</option>
+                                <!-- This will be populated based on the selected event -->
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="new_date" class="form-label">Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="new_date" name="date" value="{{ today_date|date:'Y-m-d' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="new_start_time" class="form-label">Start Time <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="new_start_time" name="start_time" required>
+                        </div>
+
+                        <input type="hidden" id="new_end_time" name="end_time">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="feather icon-save me-1"></i>Add Group
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.bg-copper {
+    background-color: #cd7f32;
+}
+.text-copper {
+    color: #cd7f32;
+}
+
+/* Sticky table header */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Hover effect for cards */
+.hover-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+/* Disable hover effect on mobile */
+@media (max-width: 767px) {
+    .hover-card:hover {
+        transform: none;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+    }
+}
+
+
+    .fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+#waitForResultsContainer {
+    transition: opacity 0.3s ease-in;
+}
+
+
+
+    @keyframes blink {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+  }
+
+  .loading-dots {
+    animation: blink 1.5s infinite;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+
+
+    // Function to copy join link to clipboard
+    function copyToClipboard(elementId) {
+        const copyText = document.getElementById(elementId);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand("copy");
+
+        // Show feedback that it was copied
+        const originalText = copyText.nextElementSibling.innerHTML;
+        copyText.nextElementSibling.innerHTML = '<i class="feather icon-check"></i>';
+        setTimeout(function() {
+            copyText.nextElementSibling.innerHTML = originalText;
+        }, 1500);
+    }
+
+// Function to download QR code
+function downloadQR(data, groupName) {
+    const qrLink = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data)}`;
+     window.open(qrLink, '_blank');
+    const link = document.createElement('a');
+    link.href = qrLink;
+    link.download = `group_${groupName}_qr.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+}
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+
+const endedGroupsHistoryBtn = document.querySelector('.btn-clock-history');
+const endedGroupsModal = new bootstrap.Modal(document.getElementById('endedGroupsHistoryModal'));
+const loadingSpinner = document.getElementById('loadingSpinner');
+const endedGroupsContent = document.getElementById('endedGroupsContent');
+const noEndedGroupsMessage = document.getElementById('noEndedGroupsMessage');
+
+if (endedGroupsHistoryBtn) {
+    endedGroupsHistoryBtn.addEventListener('click', function() {
+        // Reset previous content
+        endedGroupsContent.innerHTML = '';
+        loadingSpinner.style.display = 'block';
+        endedGroupsContent.style.display = 'none';
+        noEndedGroupsMessage.style.display = 'none';
+
+        // Show the modal
+        endedGroupsModal.show();
+
+        // Fetch ended groups
+        const slotId = "{{ slot.slot_id }}";
+        fetch(`/host/slot/${slotId}/ended-groups/`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingSpinner.style.display = 'none';
+            console.log("Ended groups data:", data); // Debug log
+
+            if (data.status === 'success') {
+                if (data.ended_groups.length === 0) {
+                    noEndedGroupsMessage.style.display = 'block';
+                } else {
+                    // Populate the content
+                    let content = '';
+                    data.ended_groups.forEach((group, index) => {
+                        // Check for report in either direct property or metadata
+                        let reportFilename = null;
+                        if (group.analytics_report) {
+                            reportFilename = group.analytics_report;
+                        } else if (group.metadata && group.metadata.analytics_report) {
+                            reportFilename = group.metadata.analytics_report;
+                        }
+
+                        content += `
+                        <div class="card mb-3">
+                            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-archive me-2"></i>Group ${group.group_name}
+                                </h5>
+                                <div>
+                                    <span class="badge bg-light text-dark me-2">${group.event_name} - Level ${group.level_number}</span>
+                                    ${reportFilename ?
+                                        `<a href="/reports/${reportFilename}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="feather icon-download me-1"></i>Report
+                                        </a>` :
+                                        ''}
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <strong>Event:</strong> ${group.event_name}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Level:</strong> ${group.level_name}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Topic:</strong> ${group.topic || 'N/A'}
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <strong>Date:</strong> ${group.date}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Start Time:</strong> ${group.start_time}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>End Time:</strong> ${group.end_time || 'N/A'}
+                                    </div>
+                                </div>
+
+                                <h6 class="mt-3 mb-2">Participants (${group.total_participants})</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Name</th>
+                                                <th>ID</th>
+                                                <th>Department</th>
+                                                <th>Mark</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${group.participants.map((participant, index) => `
+                                                <tr>
+                                                    <td>${index + 1}</td>
+                                                    <td>${participant.name}</td>
+                                                    <td>${participant.roll_number || participant.staff_id || 'N/A'}</td>
+                                                    <td>${participant.department || 'N/A'}</td>
+                                                    <td>${participant.mark !== null ? participant.mark.toFixed(2) : 'N/A'}</td>
+                                                    <td>
+                                                        <span class="badge ${participant.participant_status === 'completed' ? 'bg-success' : 'bg-warning'}">
+                                                            ${participant.participant_status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+
+                    endedGroupsContent.innerHTML = content;
+                    endedGroupsContent.style.display = 'block';
+                }
+            } else {
+                // Handle error
+                noEndedGroupsMessage.textContent = data.message || 'Error fetching ended groups';
+                noEndedGroupsMessage.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            loadingSpinner.style.display = 'none';
+            noEndedGroupsMessage.textContent = 'An error occurred while fetching ended groups';
+            noEndedGroupsMessage.style.display = 'block';
+        });
+    });
+}
+    // References to form elements
+    const startTimeInput = document.getElementById('new_start_time');
+    const dateInput = document.getElementById('new_date');
+    const eventSelect = document.getElementById('new_event');
+    const levelSelect = document.getElementById('new_level');
+    const endTimeInput = document.getElementById('new_end_time');
+    const groupForm = document.querySelector('#addGroupModal form');
+
+    // Set today as minimum date
+    const today = new Date();
+    dateInput.min = today.toISOString().split('T')[0];
+    dateInput.value = today.toISOString().split('T')[0];
+
+    // Fetch levels when event is selected
+    eventSelect.addEventListener('change', function() {
+        const eventId = this.value;
+        if (!eventId) {
+            levelSelect.innerHTML = '<option value="">Select Level</option>';
+            return;
+        }
+
+        fetch(`/api/get_levels_for_event/${eventId}/`)
+            .then(response => response.json())
+            .then(data => {
+                levelSelect.innerHTML = '<option value="">Select Level</option>';
+                if (data.levels && data.levels.length > 0) {
+                    data.levels.forEach(level => {
+                        levelSelect.innerHTML += `<option value="${level.id}" data-duration="${level.total_duration}">${level.name} (Level ${level.level})</option>`;
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    });
+
+    // Calculate end time when level or start time changes
+    function calculateEndTime() {
+        if (!levelSelect.value || !startTimeInput.value) return;
+
+        const selectedOption = levelSelect.options[levelSelect.selectedIndex];
+        const duration = selectedOption.dataset.duration;
+
+        if (duration) {
+            const [hours, minutes] = startTimeInput.value.split(':').map(Number);
+
+            let endDateTime = new Date();
+            endDateTime.setHours(hours, minutes, 0);
+            endDateTime.setMinutes(endDateTime.getMinutes() + parseInt(duration));
+
+            endTimeInput.value = `${String(endDateTime.getHours()).padStart(2, '0')}:${String(endDateTime.getMinutes()).padStart(2, '0')}`;
+        }
+    }
+
+    // Update end time when level changes
+    levelSelect.addEventListener('change', calculateEndTime);
+
+    // Update end time when start time changes
+    startTimeInput.addEventListener('change', calculateEndTime);
+
+    // AJAX Form submission for Add Group
+    if (groupForm) {
+        groupForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Check required fields
+            if (!startTimeInput.value || !eventSelect.value || !levelSelect.value || !dateInput.value) {
+                alert('Please fill in all required fields');
+                return false;
+            }
+
+            // Calculate end time one more time before submission
+            calculateEndTime();
+
+            // Create FormData object
+            const formData = new FormData(this);
+
+            // Send AJAX request
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    showToast(data.message || 'Group added successfully', 'success');
+
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addGroupModal'));
+                    modal.hide();
+
+                    // Reload the page content without full refresh
+                    reloadPageContent();
+                } else {
+                    // Show error message
+                    showToast(data.message || 'Error adding group', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An unexpected error occurred', 'error');
+            });
+        });
+    }
+
+    // Handle all edit group forms
+    document.querySelectorAll('form[action*="edit_group"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Create FormData object
+            const formData = new FormData(this);
+
+            // Send AJAX request
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    showToast(data.message || 'Group updated successfully', 'success');
+
+                    // Close modal
+                    const modalId = this.closest('.modal').id;
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                    modal.hide();
+
+                    // Reload the page content without full refresh
+                    reloadPageContent();
+                } else {
+                    // Show error message
+                    showToast(data.message || 'Error updating group', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An unexpected error occurred', 'error');
+            });
+        });
+    });
+});
+
+// AJAX function to remove participant
+function removeParticipant(participantId, groupId) {
+    if (confirm("Are you sure you want to remove this participant?")) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('action', 'remove_participant');
+        formData.append('participant_id', participantId);
+        formData.append('group_id', groupId);
+
+        // Send AJAX request
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Show success message
+                showToast(data.message || 'Participant removed successfully', 'success');
+
+                // Remove participant row without page refresh
+                const row = document.querySelector(`button[onclick*="${participantId}"]`).closest('tr');
+                row.classList.add('fade-out');
+                setTimeout(() => {
+                    row.remove();
+                }, 300);
+            } else {
+                // Show error message
+                showToast(data.message || 'Error removing participant', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An unexpected error occurred', 'error');
+        });
+    }
+}
+
+
+function startGroupDataPolling() {
+    // Store the last update time for comparison
+    let lastUpdateTime = new Date().getTime();
+
+    // Keep track of groups that have shown notifications
+    const notifiedGroups = new Set();
+
+    // Poll every 3 seconds
+    setInterval(function() {
+        const slotId = '{{ slot.slot_id }}';
+
+        fetch(`/slot/${slotId}/group-updates/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-Last-Update': lastUpdateTime
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                lastUpdateTime = data.timestamp;
+
+                // Only update if we have changes
+                if (data.groups && data.groups.length > 0) {
+                    // Update each group's data
+                    data.groups.forEach(groupData => {
+                        updateGroupParticipants(groupData);
+                    });
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error polling for group updates:', error);
+        });
+    }, 3000); // Check every 3 seconds
+}
+
+
+function updateGroupParticipants(groupData) {
+    const groupId = groupData.id;
+    const groupCard = document.querySelector(`[data-group-id="${groupId}"]`);
+
+    if (!groupCard) return;
+
+    // Update participant count and status in the group header
+    const statusBanner = groupCard.querySelector('.alert');
+    if (statusBanner) {
+        const countSpan = statusBanner.querySelector('span strong');
+        if (countSpan) {
+            countSpan.textContent = `Group ${groupData.start_status}`;
+            const participantText = statusBanner.querySelector('span');
+            if (participantText) {
+                participantText.innerHTML = participantText.innerHTML.replace(
+                    /\d+ participant\(s\)/,
+                    `${groupData.filled_capacity} participant(s)`
+                );
+            }
+        }
+    }
+
+    // Update participants table if it exists
+    const participantsTable = groupCard.querySelector('table tbody');
+    if (participantsTable && groupData.participants) {
+        // Clear existing rows to avoid duplicates
+        participantsTable.innerHTML = '';
+
+        // Add each participant
+        groupData.participants.forEach(p => {
+            const row = document.createElement('tr');
+
+            // Member info cell
+            const memberCell = document.createElement('td');
+            memberCell.innerHTML = `
+                <div class="d-flex align-items-center">
+                    ${p.photo ?
+                        `<img src="${p.photo}" alt="${p.name}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">` :
+                        `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                            <i class="feather icon-user text-secondary" style="font-size: 12px;"></i>
+                        </div>`
+                    }
+                    <div class="small lh-sm">
+                        <div class="fw-medium text-truncate fw-bold" style="max-width: 120px;">${p.name}</div>
+                        <div class="text-muted small fw-bold">${p.id_number || ''}</div>
+                    </div>
+                </div>
+            `;
+
+            // Join status cell
+            const joinCell = document.createElement('td');
+            joinCell.className = 'text-center align-middle';
+            joinCell.innerHTML = p.joined ?
+                '<span class="badge bg-success">Joined</span>' :
+                '<span class="badge bg-secondary">Not Joined</span>';
+
+            // Vote status cell
+            const voteCell = document.createElement('td');
+            voteCell.className = 'text-center align-middle';
+            if (p.voting_status === 'finished') {
+                voteCell.innerHTML = '<span class="badge bg-success">Completed</span>';
+            } else if (p.voting_status === 'in_progress') {
+                voteCell.innerHTML = '<span class="badge bg-primary">Voting</span>';
+            } else if (p.request_voting) {
+                voteCell.innerHTML = '<span class="badge bg-warning">Requested</span>';
+            } else {
+                voteCell.innerHTML = '<span class="badge bg-secondary">Not Started</span>';
+            }
+
+            // Progress cell
+            const progressCell = document.createElement('td');
+            progressCell.className = 'text-center align-middle';
+            if (p.voting_status === 'in_progress' || p.voting_status === 'finished') {
+                progressCell.innerHTML = `<span class="small fw-medium">${p.current_question}/${p.total_questions}</span>`;
+            } else {
+                progressCell.innerHTML = '<span class="text-muted small">—</span>';
+            }
+
+            // Add all cells to the row
+            row.appendChild(memberCell);
+            row.appendChild(joinCell);
+            row.appendChild(voteCell);
+            row.appendChild(progressCell);
+
+            // Add the row to the table
+            participantsTable.appendChild(row);
+        });
+
+        // Update group buttons based on status
+        updateGroupButtons(groupCard, groupData);
+    }
+}
+
+function updateGroupButtons(groupCard, groupData) {
+    // Update "Start Group" button
+    const startButton = groupCard.querySelector('button[onclick*="updateStartStatus"]');
+    if (startButton) {
+        if (groupData.start_status === 'pause') {
+            startButton.innerHTML = '<i class="feather icon-play me-1"></i>Start Group';
+            startButton.className = 'btn btn-sm btn-success flex-grow-1';
+            startButton.disabled = groupData.filled_capacity < 6;
+        } else if (groupData.start_status === 'start') {
+            startButton.innerHTML = '<i class="feather icon-pause me-1"></i>Pause Group';
+            startButton.className = 'btn btn-sm btn-warning flex-grow-1';
+            startButton.disabled = false;
+        }
+    }
+
+    // Update voting control buttons
+    const votingButton = groupCard.querySelector('button[onclick*="startVoting"], button[onclick*="pauseVoting"]');
+    if (votingButton) {
+        if (groupData.start_status === 'start') {
+            if (groupData.voting_count > 0 || groupData.completed_count > 0) {
+                votingButton.innerHTML = '<i class="feather icon-pause-circle me-1"></i>Pause Voting';
+                votingButton.onclick = function() { pauseVoting(groupData.id); };
+                votingButton.className = 'btn btn-sm btn-warning flex-grow-1';
+            } else {
+                votingButton.innerHTML = '<i class="feather icon-check-square me-1"></i>Start Voting';
+
+                votingButton.onclick = function() { startVoting(groupData.id); };
+                votingButton.className = 'btn btn-sm btn-primary flex-grow-1';
+                votingButton.disabled = groupData.joined_count < groupData.filled_capacity;
+            }
+        }
+    }
+
+    // Update results button - this is the critical part we need to fix
+    const resultsContainer = groupCard.querySelector('.d-flex.flex-column.gap-2 > .d-flex:last-child');
+
+    if (resultsContainer) {
+        // Check if all participants have completed voting
+        const allCompleted = groupData.completed_count === groupData.filled_capacity && groupData.filled_capacity > 0;
+
+        // Check results published status
+        const resultsPublished = groupData.results_published;
+
+        // Get current content to avoid unnecessary DOM updates
+        const currentContent = resultsContainer.innerHTML;
+        let newContent = '';
+
+        if (resultsPublished) {
+            // Results already published content
+            newContent = `
+                <div class="d-flex gap-2 w-100">
+                    <button type="button" class="btn btn-sm btn-outline-success flex-grow-1" disabled>
+                        <i class="feather icon-check-circle me-1"></i>Results Published
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1"
+                            data-bs-toggle="modal" data-bs-target="#resultsModal${groupData.id}">
+                        <i class="feather icon-award me-1"></i>View Results
+                    </button>
+                    <a href="/reports/${reportFilename}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="feather icon-download me-1"></i>Report
+                                        </a>
+                </div>
+            `;
+        } else if (allCompleted) {
+            // All members completed voting but results not published
+            newContent = `
+                <button type="button" class="btn btn-sm btn-success flex-grow-1 btn-pulse"
+                        onclick="publishResults('${groupData.id}')">
+                    <i class="feather icon-award me-1"></i>Publish Results
+                </button>
+            `;
+        } else {
+            // Not all members have completed voting
+            newContent = `
+                <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1" disabled>
+                    <i class="feather icon-award me-1"></i>Waiting for Completion (${groupData.completed_count}/${groupData.filled_capacity})
+                </button>
+            `;
+        }
+
+        // Only update the DOM if content has changed
+        if (currentContent.trim() !== newContent.trim()) {
+            resultsContainer.innerHTML = newContent;
+
+            // If all completed, show notification
+            if (allCompleted && !resultsPublished) {
+                // Use sessionStorage to ensure we only show the notification once per page load
+                const notificationKey = `results_ready_${groupData.id}`;
+                if (!sessionStorage.getItem(notificationKey)) {
+                    showToast(`All participants in Group ${groupData.group_name} have completed voting. Results are ready to publish!`, 'success');
+                    sessionStorage.setItem(notificationKey, 'true');
+                }
+            }
+        }
+    }
+}
+
+startGroupDataPolling();
+function resetGroup(groupId) {
+    if (confirm('Are you sure you want to reset this group? All participants will be removed and group status will be set to end.')) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('action', 'reset_group');
+        formData.append('group_id', groupId);
+
+        // Show loading indicator
+        showToast('Resetting group...', 'info');
+
+        // Send AJAX request
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(data.message || 'Group reset successfully', 'success');
+
+                // Reload the page after a brief delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showToast(data.message || 'Error resetting group', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An unexpected error occurred', 'error');
+        });
+    }
+}
+
+// AJAX function to delete group
+function deleteGroup(groupId) {
+    if (confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+        // Get CSRF token
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('action', 'delete_group');
+        formData.append('group_id', groupId);
+
+        // Send AJAX request
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Show success message
+                showToast(data.message || 'Group deleted successfully', 'success');
+
+                // Hide the modal
+                const modalId = `deleteGroupModal${groupId}`;
+                const modal = bootstrap.Modal.getInstance(document.getElementById(modalId));
+                if (modal) modal.hide();
+
+                // Remove the group card without page refresh
+                const card = document.querySelector(`[data-group-id="${groupId}"]`);
+                if (card) {
+                    card.classList.add('fade-out');
+                    setTimeout(() => {
+                        card.remove();
+                    }, 300);
+                } else {
+                    // If we can't find the card easily, just reload the content
+                    reloadPageContent();
+                }
+            } else {
+                // Show error message
+                showToast(data.message || 'Error deleting group', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An unexpected error occurred', 'error');
+        });
+    }
+}
+
+// Function to show toast messages
+function showToast(message, type) {
+    // Check if we have a toast container, create one if not
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'position-fixed bottom-0 end-0 p-3';
+        toastContainer.style.zIndex = "1050";
+        document.body.appendChild(toastContainer);
+    }
+
+    // Create toast element
+    const toastId = 'toast-' + Date.now();
+    const toastHtml = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header ${type === 'error' ? 'bg-danger text-white' : 'bg-success text-white'}">
+                <strong class="me-auto">${type === 'error' ? 'Error' : 'Success'}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    `;
+
+    // Add toast to container
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+    // Initialize and show the toast
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+    toast.show();
+
+    // Remove toast after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+// Function to reload page content without a full refresh
+function reloadPageContent() {
+    fetch(window.location.href, {
+        headers: {
+            'X-Requested-With': 'HtmlOnly'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Create a temporary element to parse the HTML
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = html;
+
+        // Get the main content container from both current page and new HTML
+        const currentContent = document.querySelector('.pc-content');
+        const newContent = tempElement.querySelector('.pc-content');
+
+        // Replace the content
+        if (currentContent && newContent) {
+            currentContent.innerHTML = newContent.innerHTML;
+
+            // Reinitialize any event listeners or components
+            initializePageComponents();
+        }
+    })
+    .catch(error => {
+        console.error('Error reloading content:', error);
+        // If reload fails, do a full page refresh as fallback
+        window.location.reload();
+    });
+}
+
+// Function to initialize any components that need setup after content reload
+function initializePageComponents() {
+    // Reinitialize tooltips, popovers, etc.
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(tooltip => {
+        new bootstrap.Tooltip(tooltip);
+    });
+
+    // Re-attach event listeners
+    document.querySelectorAll('form[action*="edit_group"]').forEach(form => {
+        // Remove existing event listeners first to avoid duplicates
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+
+        // Add event listener to the new form
+        newForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // AJAX submission code (same as before)
+            // ...
+        });
+    });
+
+
+}
+
+
+
+
+function updateStartStatus(groupId, status) {
+    const formData = new FormData();
+    formData.append('action', 'update_start_status');
+    formData.append('group_id', groupId);
+    formData.append('start_status', status);
+    formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Refresh the page to show updated status
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+// Function to start voting for a group
+function startVoting(groupId) {
+    const formData = new FormData();
+    formData.append('action', 'start_voting');
+    formData.append('group_id', groupId);
+    formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Refresh the page to show updated status
+            window.location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+// Function to pause voting for a group
+function pauseVoting(groupId) {
+    const formData = new FormData();
+    formData.append('action', 'pause_voting');
+    formData.append('group_id', groupId);
+    formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
+    // Log to console for debugging
+    console.log("Pausing voting for group:", groupId);
+
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Show success message
+            showToast(data.message || 'Voting paused successfully', 'success');
+            // Reload content without page refresh
+            reloadPageContent();
+        } else {
+            // Show error message
+            showToast(data.message || 'Error pausing voting', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('An unexpected error occurred while pausing voting', 'error');
+    });
+}
+
+
+
+
+function publishResults(groupId) {
+    if (!confirm('Are you sure you want to publish the results? This action cannot be undone.')) {
+        return;
+    }
+
+    // Show loading indicator
+    const publishBtn = document.querySelector(`button[onclick="publishResults('${groupId}')"]`);
+    if (publishBtn) {
+        publishBtn.innerHTML = '<i class="feather icon-loader me-1" style="animation: spin 1s linear infinite;"></i>Publishing...';
+        publishBtn.disabled = true;
+    }
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('action', 'publish_results');
+    formData.append('group_id', groupId);
+    formData.append('csrfmiddlewaretoken', document.querySelector('input[name="csrfmiddlewaretoken"]').value);
+
+    // Send AJAX request
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Show success message with report generation info if available
+            let message = data.message || 'Results published successfully';
+
+            // Store report URL in a global object for this group
+            if (data.report_url) {
+                if (!window.groupReports) {
+                    window.groupReports = {};
+                }
+                window.groupReports[groupId] = data.report_url;
+
+                message += ' Analytics report is ready for download.';
+                console.log("Report URL received:", data.report_url);
+            }
+
+            showToast(message, 'success');
+
+            // Update UI without reload - simulate a published state immediately
+            const groupCard = document.querySelector(`[data-group-id="${groupId}"]`);
+            if (groupCard) {
+                const resultsContainer = groupCard.querySelector('.d-flex.flex-column.gap-2 > .d-flex:last-child');
+                if (resultsContainer) {
+                    // Check if we have a report URL
+                    const reportBtnHtml = window.groupReports && window.groupReports[groupId] ?
+                        `<a href="/reports/${reportFilename}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="feather icon-download me-1"></i>Report
+                                        </a>` : '';
+
+                    resultsContainer.innerHTML = `
+                        <div class="d-flex gap-2 w-100">
+                            <button type="button" class="btn btn-sm btn-outline-success flex-grow-1" disabled>
+                                <i class="feather icon-check-circle me-1"></i>Results Published
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary flex-grow-1"
+                                    data-bs-toggle="modal" data-bs-target="#resultsModal${groupId}">
+                                <i class="feather icon-award me-1"></i>View Results
+                            </button>
+                        </div>
+                        ${reportBtnHtml}
+                    `;
+
+                    // Initialize the modal trigger for the new button
+                    const newViewResultsBtn = resultsContainer.querySelector('[data-bs-toggle="modal"]');
+                    if (newViewResultsBtn && typeof bootstrap !== 'undefined') {
+                        new bootstrap.Modal(document.getElementById(`resultsModal${groupId}`));
+                    }
+                }
+            }
+
+            // Reload the page after a short delay to get fresh data
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        } else {
+            // Show error message
+            showToast(data.message || 'Error publishing results', 'error');
+
+            // Reset button
+            if (publishBtn) {
+                publishBtn.innerHTML = '<i class="feather icon-award me-1"></i>Publish Results';
+                publishBtn.disabled = false;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('An unexpected error occurred while publishing results. Please try again.', 'error');
+
+        // Reset button
+        if (publishBtn) {
+            publishBtn.innerHTML = '<i class="feather icon-award me-1"></i>Publish Results';
+            publishBtn.disabled = false;
+        }
+    });
+}
+
+
+// Function to fetch updated data for a specific group
+function fetchUpdatedGroupData(groupId) {
+    const slotId = document.querySelector('input[name="slot_id"]').value ||
+                  window.location.pathname.split('/').filter(Boolean).pop();
+
+    fetch(`/slot/${slotId}/group-updates/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success' && data.groups) {
+            // Find the specific group
+            const groupData = data.groups.find(g => g.id == groupId);
+            if (groupData) {
+                // Update this group's data
+                const groupCard = document.querySelector(`[data-group-id="${groupId}"]`);
+                if (groupCard) {
+                    updateGroupParticipants(groupData);
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching updated group data:', error);
+    });
+}
+
+// Add CSS for fade-out animation
+const style = document.createElement('style');
+style.textContent = `
+    .fade-out {
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
+
+
+

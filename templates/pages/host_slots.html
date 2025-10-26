@@ -1,0 +1,357 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Host Slots{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="container">
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="row align-items-center mb-3">
+                                <div class="col-md-6">
+                                    <h2 class="mb-0">
+                                        {% if is_superuser %}
+                                        <i class="bi bi-shield-lock-fill me-2"></i>All Slots (Admin View)
+                                        {% else %}
+                                        <i class="bi bi-diagram-3-fill me-2"></i>My Hosting Slots
+                                        {% endif %}
+                                    </h2>
+                                </div>
+                                <div class="col-md-6 text-md-end">
+                                    {% if is_superuser or is_slot_creator %}
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSlotModal">
+                                        <i class="feather icon-plus-circle me-2"></i>Create Slot
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <form method="get" class="row g-3">
+                                <div class="col-md-11">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light">
+                                            <i class="feather icon-search"></i>
+                                        </span>
+                                        <input type="text"
+                                               class="form-control"
+                                               name="search"
+                                               placeholder="Search by Slot ID, Created By, Assigned To, or Venue..."
+                                               value="{{ request.GET.search }}"
+                                        >
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="feather icon-search"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if faculty_slots %}
+            <!-- Live Slots Section -->
+            <div class="row mb-2">
+                <div class="col-12">
+                    <h5 class="text-success">
+                        <i class="feather icon-activity me-2"></i>Live Slots
+                    </h5>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                {% for slot in faculty_slots %}
+                {% if slot.slot_status == 'live' %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <a href="{% url 'host_slot_detail' slot.slot_id %}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card border-success">
+                            <div class="card-header bg-success bg-opacity-75 text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h4 class="fw-bold mb-0"><i class="feather icon-hash me-2 "></i>Slot - {{ slot.slot_id }}</h4>
+                                    <span class="badge bg-success">
+                                        Live
+                                    </span>
+                                </div>
+                                <div class="mt-2">
+                                    <h6 class="mb-0 fw-bold">
+                                        <i class="feather icon-calendar me-1 fw-bold"></i>
+                                        {{ slot.created_at|date:"d M Y" }}
+                                    </h6>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {% if slot.groups %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-clock text-success me-2" style="width: 16px;"></i>
+                                        <span>
+                                            {% with first_group=slot.groups.0 %}
+                                                {% if first_group.start_time %}
+                                                    {{ first_group.start_time|time:"H:i" }} -
+                                                    {% if first_group.end_time %}
+                                                        {{ first_group.end_time|time:"H:i" }}
+                                                    {% else %}
+                                                        --:--
+                                                    {% endif %}
+                                                {% else %}
+                                                    Time not set
+                                                {% endif %}
+                                            {% endwith %}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-map-pin text-success me-2" style="width: 16px;"></i>
+                                        <span>{{ slot.venue|default:"No venue specified" }}</span>
+                                    </div>
+
+                                    {% if is_superuser %}
+                                    <!-- Created by and Assigned to info for superusers -->
+                                    {% if slot.created_by %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-user text-success me-2" style="width: 16px;"></i>
+                                        <span>Created by: {{ slot.created_by.name }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if slot.assigned_to %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-user-check text-success me-2" style="width: 16px;"></i>
+                                        <span>Assigned to: {{ slot.assigned_to.name }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">
+                                        <i class="feather icon-users me-1"></i>
+                                        {{ slot.participants_count }} Participants
+                                    </span>
+                                    <span class="text-muted">
+                                        <i class="feather icon-grid me-1"></i>
+                                        {{ slot.groups_count }} Groups
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                {% if not faculty_slots|dictsort:"slot_status"|first %}
+                <div class="col-12">
+                    <div class="alert alert-light text-center p-3">
+                        <p class="text-muted mb-0">No live slots available</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Expired Slots Section -->
+            <div class="row mb-2">
+                <div class="col-12">
+                    <h5 class="text-secondary">
+                        <i class="feather icon-clock me-2"></i>Expired Slots
+                    </h5>
+                </div>
+            </div>
+
+            <div class="row">
+                {% for slot in faculty_slots %}
+                {% if slot.slot_status == 'expired' %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <a href="{% url 'host_slot_detail' slot.slot_id %}" class="text-decoration-none">
+                        <div class="card h-100 shadow-sm hover-card border-secondary">
+                            <div class="card-header bg-secondary text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="fw-bold mb-0"><i class="feather icon-hash me-2"></i>Slot - {{ slot.slot_id }}</h5>
+                                    <span class="badge bg-secondary">
+                                        Expired
+                                    </span>
+                                </div>
+                                <div class="mt-2">
+                                    <h6 class="mb-0">
+                                        <i class="feather icon-calendar me-1"></i>
+                                        {{ slot.created_at|date:"d M Y" }}
+                                    </h6>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    {% if slot.groups %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-clock text-secondary me-2" style="width: 16px;"></i>
+                                        <span>
+                                            {% with first_group=slot.groups.0 %}
+                                                {% if first_group.start_time %}
+                                                    {{ first_group.start_time|time:"H:i" }} -
+                                                    {% if first_group.end_time %}
+                                                        {{ first_group.end_time|time:"H:i" }}
+                                                    {% else %}
+                                                        --:--
+                                                    {% endif %}
+                                                {% else %}
+                                                    Time not set
+                                                {% endif %}
+                                            {% endwith %}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-map-pin text-secondary me-2" style="width: 16px;"></i>
+                                        <span>{{ slot.venue|default:"No venue specified" }}</span>
+                                    </div>
+
+                                    {% if is_superuser %}
+                                    <!-- Created by and Assigned to info for superusers -->
+                                    {% if slot.created_by %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-user text-secondary me-2" style="width: 16px;"></i>
+                                        <span>Created by: {{ slot.created_by.name }}</span>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if slot.assigned_to %}
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="feather icon-user-check text-secondary me-2" style="width: 16px;"></i>
+                                        <span>Assigned to: {{ slot.assigned_to.name }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">
+                                        <i class="feather icon-users me-1"></i>
+                                        {{ slot.participants_count }} Participants
+                                    </span>
+                                    <span class="text-muted">
+                                        <i class="feather icon-grid me-1"></i>
+                                        {{ slot.groups_count }} Groups
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                {% if not faculty_slots|dictsort:"slot_status"|last %}
+                <div class="col-12">
+                    <div class="alert alert-light text-center p-3">
+                        <p class="text-muted mb-0">No expired slots available</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info text-center p-5">
+                        <i class="bi bi-calendar-x mb-3" style="font-size: 48px;"></i>
+                        <h4>No Slots Available</h4>
+                        <p class="text-muted mb-0">
+                            {% if is_superuser %}
+                            There are currently no slots in the system.
+                            {% else %}
+                            You haven't been assigned as a host for any slots yet.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+<!-- Create Slot Modal -->
+<div class="modal fade" id="createSlotModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="feather icon-plus-circle me-2"></i>Create New Slot
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'create_slot' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row g-3">
+                        {% if is_superuser %}
+                        <div class="col-md-6">
+                            <label class="form-label">Assign To (Slot Host)</label>
+                            <select name="assigned_to" class="form-control">
+                                <option value="">Select Slot Host (Optional)</option>
+                                {% for host in slot_hosts %}
+                                <option value="{{ host.id }}">{{ host.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-md-{% if is_superuser %}6{% else %}12{% endif %}">
+                            <label class="form-label">Venue</label>
+                            <select name="venue" class="form-control" required>
+                                <option value="">Select Venue</option>
+                                {% for venue in venues %}
+                                <option value="{{ venue.id }}">{{ venue.venue_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="feather icon-save me-2"></i>Create Slot
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+{% block extra_css %}
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+    border-left-width: 4px;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+.border-success {
+    border-color: #28a745 !important;
+}
+.border-secondary {
+    border-color: #6c757d !important;
+}
+/* Disable hover effect on mobile */
+@media (max-width: 767px) {
+    .hover-card:hover {
+        transform: none;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+    }
+}
+</style>
+{% endblock %}

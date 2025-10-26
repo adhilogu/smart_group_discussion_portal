@@ -1,0 +1,774 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}{{ event.event_name }} Details{% endblock %}
+
+{% block content %}
+<div class="pc-container">
+    <div class="pc-content">
+        <!-- Event Header -->
+        <div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <!-- Event Image and Title -->
+                <div class="d-flex flex-column flex-md-row align-items-md-center">
+                    {% if event.event_photo %}
+                    <div class="mb-3 mb-md-0 me-md-4 text-center">
+                        <img src="{{ event.event_photo.url }}"
+                             class="img-fluid rounded shadow"
+                             style="width: 100%; max-width: 350px; height: 150px; object-fit: cover;"
+                             alt="{{ event.event_name }}">
+                    </div>
+                    {% endif %}
+                    <div class="text-center text-md-start flex-grow-1">
+                        <h2 class="mb-2 fw-bold h3 h2-md">{{ event.event_name }}</h2>
+                        <div class="d-flex justify-content-center justify-content-md-start mb-3">
+                            <span class="badge {% if user_achievement %}bg-success{% else %}bg-primary{% endif %} fs-6">
+                                {% if user_achievement %}
+                                    <i class="feather icon-award me-1"></i>Current Level: {{ user_achievement.level }}
+                                {% else %}
+                                    <i class="feather icon-flag me-1"></i>Start with Level 1
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Stats Squares - Horizontal scrolling on mobile -->
+                    <div class="stats-container mt-3 mt-md-0">
+                        <div class="d-flex flex-row gap-2 overflow-auto pb-2" style="scrollbar-width: none; -ms-overflow-style: none;">
+                            <div class="text-center p-2 rounded bg-light" style="min-width: 100px; flex: 0 0 auto;">
+                                <i class="fas fa-redo-alt mb-2 text-primary" style="font-size: 1.5rem;"></i>
+                                <h6 class="mb-1">Attempts</h6>
+                                <span class="fw-bold">{{ attempts_count|default:0 }}</span>
+                            </div>
+
+                            <div class="text-center p-2 rounded bg-light" style="min-width: 100px; flex: 0 0 auto;">
+                                <i class="fas fa-level-up-alt mb-2 text-success" style="font-size: 1.5rem;"></i>
+                                <h6 class="mb-1">Level</h6>
+                                <span class="fw-bold">{{ user_achievement.level|default:0 }}</span>
+                            </div>
+
+                            <div class="text-center p-2 rounded bg-light" style="min-width: 100px; flex: 0 0 auto;">
+                                <i class="fas fa-medal mb-2 text-warning" style="font-size: 1.5rem;"></i>
+                                <h6 class="mb-1">Top Badge</h6>
+                                <span class="fw-bold">Gold</span>
+                            </div>
+
+                            <div class="text-center p-2 rounded bg-light" style="min-width: 100px; flex: 0 0 auto;">
+                                <i class="fas fa-star mb-2 text-info" style="font-size: 1.5rem;"></i>
+                                <h6 class="mb-1">Good at</h6>
+                                <span class="fw-bold">Technology</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+        <!-- Levels and Slots -->
+       <div class="row">
+        {% for level_info in levels_details %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm
+                {% if level_info.is_completed %}bg-success bg-opacity-10
+                {% elif level_info.is_eligible %}border-primary
+                {% else %}border-secondary{% endif %}">
+                <div class="card-header
+                    {% if level_info.is_completed %}bg-success bg-opacity-25
+                    {% elif level_info.is_eligible %}bg-primary bg-opacity-10{% endif %}">
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Level number in circle -->
+                        <div class="d-flex align-items-center justify-content-center rounded-circle"
+                             style="width: 40px; height: 40px; min-width: 40px; background-color: rgba(128, 0, 128, 0.1);">
+                            <span class="fw-bold" style="color: #800080;">{{ level_info.level.level }}</span>
+                        </div>
+                        <!-- Level name -->
+                        <h5 class="mb-0 flex-grow-1">{{ level_info.level.name }}</h5>
+                        <!-- Status badge -->
+                        {% if level_info.is_completed %}
+                        <span class="badge bg-success">
+                            <i class="feather icon-check-circle me-1"></i>Completed
+                        </span>
+                        {% elif level_info.is_eligible %}
+                        <span class="badge bg-primary">
+                            <i class="feather icon-check-square me-1"></i> Eligible
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="feather icon-lock me-1"></i> Locked
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if level_info.level.description %}
+                    <p class="text-muted small mb-3">{{ level_info.level.description }}</p>
+                    {% endif %}
+
+                    {% if level_info.is_completed %}
+                    <div class="text-center my-1">
+                        <i class="bi bi-trophy-fill text-success" style="font-size: 3rem;"></i>
+                    </div>
+                    <div class="alert alert-success mb-2">
+                        <i class="feather icon-check-circle me-2"></i>
+                        You have completed this level!
+                    </div>
+                    <div class="text-center mb-3 pt-3">
+                        <a href="#" class="text-black text-decoration-none fs-5">
+                            <i class="feather icon-file-text me-1"></i>Results <i class="feather icon-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    {% elif level_info.is_eligible %}
+                        {% if level_info.user_joined_group %}
+                        <div class="alert alert-info mb-3">
+                            <div class="text-center">
+                                <i class="feather icon-users me-2"></i>
+                                <strong>You've joined Group {{ level_info.user_joined_group.group_name }}</strong>
+                                <br>
+                                <i class="feather icon-calendar me-2"></i>
+                                <strong>{{ level_info.user_joined_group.date|date:"D, d M Y" }}</strong>
+                                <br>
+                                <i class="feather icon-clock me-2"></i>
+                                <strong>{{ level_info.user_joined_group.start_time|time:"H:i" }} - {{ level_info.user_joined_group.end_time|time:"H:i" }}</strong>
+                                <br>
+                                <div class="mt-2">
+                                    <small>For Level {{ level_info.level.level }} | Slot ID - {{ level_info.user_joined_group.slot.slot_id }}</small>
+                                    <br>
+                                    <small><i class="feather icon-thumbs-up me-2"></i>All the Best !</small>
+                                </div>
+                                <div class="mt-3">
+                                    <a href="{% url 'my_slots_page' %}"
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="feather icon-eye me-1"></i>View Your Groups
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                            {% if level_info.slot_groups_count > 0 %}
+                            <!-- Available Slots Info -->
+                            <div class="alert alert-light align-items-center mb-2" style="background-color: #dae0e6;">
+                                <div class="mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="feather icon-users me-2"></i>
+                                        <strong>Available Live Slots: {{ level_info.slot_groups_count }}</strong>
+                                    </div>
+                                </div>
+                                <div class="d-grid">
+                                    <button class="btn btn-sm btn-outline-primary" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#collapseGroups{{ level_info.level.id }}"
+                                            aria-expanded="false" aria-controls="collapseGroups{{ level_info.level.id }}">
+                                        <i class="feather icon-eye me-1"></i>Show Groups
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Collapsible Groups List -->
+                            <div class="collapse mb-3" id="collapseGroups{{ level_info.level.id }}">
+                                <div class="card card-body p-0 border-0">
+                                    {% for group in level_info.slot_groups %}
+                                    <div class="p-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="badge bg-primary">Group {{ group.group_name }}</span>
+                                            <small class="text-muted">Slot ID: {{ group.slot.slot_id }}</small>
+                                        </div>
+                                        <div class="row mt-1">
+                                            <div class="col-6">
+                                                <small><i class="feather icon-calendar me-1 text-muted"></i>{{ group.date|date:"D, d M" }}</small>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <small><i class="feather icon-clock me-1 text-muted"></i>{{ group.start_time|time:"g:i A" }} - {{ group.end_time|time:"g:i A" }}</small>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-1">
+                                            <div class="col-6">
+                                                <small><i class="feather icon-map-pin me-1 text-muted"></i>{{ group.slot.venue|default:"Venue TBD" }}</small>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <small><i class="feather icon-users me-1 text-muted "></i><span class="badge bg-info" style="font-size:10px;">{{ group.participants.count }}</span></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-danger d-flex align-items-center">
+                                <i class="feather icon-alert-circle me-2"></i>
+                                <div>No live slots available for this level</div>
+                            </div>
+
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                    <div class="alert alert-warning d-flex align-items-center">
+                        <i class="feather icon-lock me-2"></i>
+                        <div>
+                            Please complete Level {{ level_info.level.level|add:"-1" }} to unlock this level.
+                        </div>
+                    </div>
+                    {% endif %}
+                    </div>
+                    </div>
+                    </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center p-5">
+                <i class="feather icon-triangle mb-3" style="font-size: 48px;"></i>
+                <h4>No Levels available for this event</h4>
+                <p class="text-muted mb-0">Please check back later</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+      <!-- User Progress -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary bg-opacity-25 text-primary py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="feather icon-book me-2"></i>Study Materials
+                        {% if current_eligible_level %}
+                        for Level {{ current_eligible_level.level }}
+                        {% endif %}
+                    </h5>
+
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                {% if eligible_materials %}
+                <!-- Progress bar -->
+                <div class="p-3 pb-0">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">In Progress ({{ materials_completed_count }}/{{ eligible_materials|length }})</span>
+                        <span class="text-muted">{{ materials_progress }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar"
+                             style="width: {{ materials_progress }}%;"
+                             aria-valuenow="{{ materials_progress }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <!-- Tabs for filtering materials by type -->
+                <ul class="nav nav-tabs px-3" id="materials-tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-materials"
+                                type="button" role="tab" aria-controls="all-materials" aria-selected="true">
+                            <i class="feather icon-grid me-1"></i>All Materials
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="links-tab" data-bs-toggle="tab" data-bs-target="#links-materials"
+                                type="button" role="tab" aria-controls="links-materials" aria-selected="false">
+                            <i class="feather icon-link me-1"></i>Links
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="docs-tab" data-bs-toggle="tab" data-bs-target="#docs-materials"
+                                type="button" role="tab" aria-controls="docs-materials" aria-selected="false">
+                            <i class="feather icon-file-text me-1"></i>Documents
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab content -->
+                <div class="tab-content" id="materials-tabs-content">
+                    <!-- ALL Materials Tab -->
+                    <div class="tab-pane fade show active" id="all-materials" role="tabpanel" aria-labelledby="all-tab">
+                        <div class="materials-list">
+                            {% for material in eligible_materials %}
+                                <div class="material-item d-flex align-items-center p-3 border-bottom {% if material.is_completed %}bg-success bg-opacity-10{% endif %}"
+                                     {% if material.link %}onclick="window.open('{{ material.link }}', '_blank')"{% elif material.pdf_file %}onclick="window.open('{{ material.pdf_file.url }}', '_blank')"{% endif %}
+                                     style="cursor: pointer;">
+                                    <!-- Status icon or material type icon -->
+                                    <div class="me-3">
+                                        <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                {% if 'youtube.com/watch?' in material.link or 'youtu.be/' in material.link %}
+                                                    <img src="{% static 'newicons/youtube.png' %}" alt="YouTube" style="width: 32px; height: 32px;">
+                                                {% elif material.link and 'peertube' in material.link %}
+                                                    <img src="{% static 'newicons/peertube.png' %}" alt="PeerTube" style="width: 32px; height: 32px;">
+                                                {% elif material.link and 'drive.google.com' in material.link %}
+                                                    <img src="{% static 'newicons/drive.png' %}" alt="Google Drive" style="width: 32px; height: 32px;">
+                                                {% elif material.link and '.mp4' in material.link or '.avi' in material.link or '.mov' in material.link %}
+                                                    <i class="fas fa-film text-primary" style="font-size: 28px;"></i>
+                                                {% elif material.link %}
+                                                    <i class="fas fa-link text-primary" style="font-size: 28px;"></i>
+                                                {% elif material.pdf_file %}
+                                                    <i class="fas fa-file-pdf text-danger" style="font-size: 28px;"></i>
+                                                {% else %}
+                                                    <i class="fas fa-book text-secondary" style="font-size: 28px;"></i>
+                                                {% endif %}
+                                            </div>
+                                    </div>
+
+                                    <!-- Material content -->
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">
+                                                   {% if material.title|length > 38 %}
+                                                        {{ material.title|slice:":38" }}...
+                                                    {% else %}
+                                                        {{ material.title }}
+                                                    {% endif %}
+                                                </h6>
+                                                <p class="mb-0 small text-muted">
+                                                    {% if 'youtube.com/watch?' in material.link or 'youtu.be/' in material.link %}
+                                                        YouTube Video
+                                                    {% elif material.link and 'peertube' in material.link %}
+                                                        PeerTube Video
+                                                    {% elif material.link and 'drive.google.com' in material.link %}
+                                                        Google Drive Document
+                                                    {% elif material.link and '.mp4' in material.link or '.avi' in material.link or '.mov' in material.link %}
+                                                        Video
+                                                    {% elif material.link %}
+                                                        External Resource
+                                                    {% elif material.pdf_file %}
+                                                        PDF Document
+                                                    {% else %}
+                                                        Study Material
+                                                    {% endif %}
+
+                                                </p>
+                                            </div>
+                                            <span class="badge {% if material.is_completed %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                                {% if material.is_completed %}
+                                                    Complete
+                                                {% else %}
+                                                    Not Started
+                                                {% endif %}
+                                            </span>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Completion checkbox only -->
+                                    <div class="ms-3" onclick="event.stopPropagation();">
+                                        <div class="form-check">
+                                            <input class="form-check-input material-checkbox"
+                                                   type="checkbox"
+                                                   id="material-{{ material.id }}"
+                                                   data-material-id="{{ material.id }}"
+                                                   {% if material.is_completed %}checked{% endif %}>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- LINKS Tab -->
+                    <div class="tab-pane fade" id="links-materials" role="tabpanel" aria-labelledby="links-tab">
+                        <div class="materials-list">
+                            {% for material in eligible_materials %}
+                                {% if material.link %}
+                                <div class="material-item d-flex align-items-center p-3 border-bottom {% if material.is_completed %}bg-success bg-opacity-10{% endif %}"
+                                     onclick="window.open('{{ material.link }}', '_blank')"
+                                     style="cursor: pointer;">
+                                    <!-- Status icon or material type icon -->
+                                    <div class="me-3">
+                                        <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    {% if 'youtube.com/watch?' in material.link or 'youtu.be/' in material.link %}
+                                                    <img src="{% static 'newicons/youtube.png' %}" alt="YouTube" style="width: 32px; height: 32px;">
+                                                {% elif 'peertube' in material.link %}
+                                                    <img src="{% static 'newicons/peertube.png' %}" alt="PeerTube" style="width: 32px; height: 32px;">
+                                                {% elif 'drive.google.com' in material.link %}
+                                                    <img src="{% static 'newicons/drive.png' %}" alt="Google Drive" style="width: 32px; height: 32px;">
+                                                {% elif '.mp4' in material.link or '.avi' in material.link or '.mov' in material.link %}
+                                                    <i class="fas fa-film text-primary" style="font-size: 28px;"></i>
+                                                {% else %}
+                                                    <i class="fas fa-link text-primary" style="font-size: 28px;"></i>
+                                                {% endif %}
+                                            </div>
+                                    </div>
+
+                                    <!-- Material content -->
+                                    <div class="flex-grow-1">
+                                       <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">
+                                                   {% if material.title|length > 38 %}
+                                                        {{ material.title|slice:":38" }}...
+                                                    {% else %}
+                                                        {{ material.title }}
+                                                    {% endif %}
+                                                </h6>
+                                                <p class="mb-0 small text-muted">
+                                                    {% if 'youtube.com/watch?' in material.link or 'youtu.be/' in material.link %}
+                                                        YouTube Video
+                                                    {% elif material.link and 'peertube' in material.link %}
+                                                        PeerTube Video
+                                                    {% elif material.link and 'drive.google.com' in material.link %}
+                                                        Google Drive Document
+                                                    {% elif material.link and '.mp4' in material.link or '.avi' in material.link or '.mov' in material.link %}
+                                                        Video
+                                                    {% elif material.link %}
+                                                        External Resource
+                                                    {% elif material.pdf_file %}
+                                                        PDF Document
+                                                    {% else %}
+                                                        Study Material
+                                                    {% endif %}
+
+                                                </p>
+                                            </div>
+                                            <span class="badge {% if material.is_completed %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                                {% if material.is_completed %}
+                                                    Complete
+                                                {% else %}
+                                                    Not Started
+                                                {% endif %}
+                                            </span>
+                                        </div>
+
+
+                                    </div>
+
+                                    <!-- Completion checkbox only -->
+                                   <div class="ms-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input material-checkbox"
+                                                   type="checkbox"
+                                                   id="material-link-{{ material.id }}"
+                                                   data-material-id="{{ material.id }}"
+                                                   {% if material.is_completed %}checked{% endif %}>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% empty %}
+                                <div class="alert alert-info m-3">
+                                    <div class="d-flex">
+                                        <i class="feather icon-info-circle me-3 fs-4"></i>
+                                        <div>
+                                            <h6 class="mb-1">No link resources available</h6>
+                                            <p class="mb-0">No external links or videos available for this level.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- DOCUMENTS Tab -->
+                    <div class="tab-pane fade" id="docs-materials" role="tabpanel" aria-labelledby="docs-tab">
+                        <div class="materials-list">
+                            {% for material in eligible_materials %}
+                                {% if material.pdf_file %}
+                                <div class="material-item d-flex align-items-center p-3 border-bottom {% if material.is_completed %}bg-success bg-opacity-10{% endif %}"
+                                     onclick="window.open('{{ material.pdf_file.url }}', '_blank')"
+                                     style="cursor: pointer;">
+                                    <!-- Status icon or material type icon -->
+
+                                    <div class="me-3">
+                                        <div class="d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-file-pdf text-danger" style="font-size: 28px;"></i>
+                                            </div>
+                                    </div>
+
+                                    <!-- Material content -->
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1 fw-bold">
+                                                   {% if material.title|length > 38 %}
+                                                        {{ material.title|slice:":38" }}...
+                                                    {% else %}
+                                                        {{ material.title }}
+                                                    {% endif %}
+                                                </h6>
+                                                <p class="mb-0 small text-muted">
+                                                    {% if material.link and 'youtube.com' in material.link %}
+                                                        YouTube Video
+                                                    {% elif material.link and 'peertube' in material.link %}
+                                                        PeerTube Video
+                                                    {% elif material.link and 'drive.google.com' in material.link %}
+                                                        Google Drive Document
+                                                    {% elif material.link and '.mp4' in material.link or '.avi' in material.link or '.mov' in material.link %}
+                                                        Video
+                                                    {% elif material.link %}
+                                                        External Resource
+                                                    {% elif material.pdf_file %}
+                                                        PDF Document
+                                                    {% else %}
+                                                        Study Material
+                                                    {% endif %}
+
+                                                </p>
+                                            </div>
+                                            <span class="badge {% if material.is_completed %}bg-success{% else %}bg-secondary{% endif %} rounded-pill">
+                                                {% if material.is_completed %}
+                                                    Complete
+                                                {% else %}
+                                                    Not Started
+                                                {% endif %}
+                                            </span>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Completion checkbox only -->
+                                    <div class="ms-3" onclick="event.stopPropagation();">
+                                        <div class="form-check">
+                                            <input class="form-check-input material-checkbox"
+                                                   type="checkbox"
+                                                   id="material-doc-{{ material.id }}"
+                                                   data-material-id="{{ material.id }}"
+                                                   {% if material.is_completed %}checked{% endif %}>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% empty %}
+                                <div class="alert alert-info m-3">
+                                    <div class="d-flex">
+                                        <i class="feather icon-info-circle me-3 fs-4"></i>
+                                        <div>
+                                            <h6 class="mb-1">No PDF documents available</h6>
+                                            <p class="mb-0">No PDF documents available for this level.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% else %}
+                    <div class="alert alert-info m-3">
+                        <div class="d-flex">
+                            <i class="feather icon-info-circle me-3 fs-4"></i>
+                            <div>
+                                <h6 class="mb-1">No materials available yet</h6>
+                                <p class="mb-0">Check back later for study materials for your current level.</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+
+
+    // Add this to the extra_js block
+// Add this to the extra_js block
+$(document).ready(function() {
+
+
+    $('.material-checkbox').on('change', function(e) {
+        const checkbox = $(this);
+        const materialId = checkbox.data('material-id');
+        const isChecked = checkbox.prop('checked');
+        const materialItem = checkbox.closest('.material-item');
+
+        console.log('Checkbox change:', {
+            materialId: materialId,
+            isChecked: isChecked
+        });
+
+        $.ajax({
+            url: '',  // Current page URL
+            type: 'POST',
+            data: {
+                'material_id': materialId,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                console.log('Server response:', response);
+
+                if (response.status === 'success') {
+                    // Update all checkboxes for this material
+                    $(`input[data-material-id="${materialId}"]`).prop('checked', response.is_completed);
+
+                    // Update material item styling
+                    const materialItems = $(`.material-item input[data-material-id="${materialId}"]`).closest('.material-item');
+
+                    materialItems.each(function() {
+                        const item = $(this);
+                        if (response.is_completed) {
+                            item.addClass('bg-success bg-opacity-10');
+                            item.find('.badge')
+                                .removeClass('bg-secondary')
+                                .addClass('bg-success')
+                                .text('Complete');
+                        } else {
+                            item.removeClass('bg-success bg-opacity-10');
+                            item.find('.badge')
+                                .removeClass('bg-success')
+                                .addClass('bg-secondary')
+                                .text('Not Started');
+                        }
+                    });
+
+                    // Update progress indicators
+                    $('.progress-bar')
+                        .css('width', response.progress + '%')
+                        .attr('aria-valuenow', response.progress);
+
+                    $('.card-header .badge').text(
+                        `${response.completed_count}/${response.total_count} Completed`
+                    );
+
+                    $('.p-3.pb-0 .d-flex span:first-child')
+                        .text(`In Progress (${response.completed_count}/${response.total_count})`);
+
+                    $('.p-3.pb-0 .d-flex span:last-child')
+                        .text(`${response.progress}%`);
+                } else {
+                    console.error('Toggle error:', response.message);
+                    checkbox.prop('checked', !isChecked);
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error details:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText
+                });
+
+                checkbox.prop('checked', !isChecked);
+                alert('An error occurred. Please check the console for details.');
+            }
+        });
+    });
+     $('.material-checkbox').on('click', function(e) {
+        e.stopPropagation();
+    });
+
+});
+
+
+
+});
+
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+@media (max-width: 768px) {
+    .h2-md {
+        font-size: 1.5rem !important;
+    }
+    .badge.fs-6 {
+        font-size: 0.875rem !important;
+    }
+    /* Make stats squares scroll horizontally on mobile if needed */
+    .d-flex.flex-row {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    }
+    .d-flex.flex-row::-webkit-scrollbar { /* WebKit */
+        display: none;
+    }
+    .stats-container {
+        width: 100%;
+    }
+    .stats-container .d-flex {
+        overflow: visible;
+    }
+}
+.stats-container .d-flex::-webkit-scrollbar {
+    display: none;
+}
+
+
+    .nav-tabs {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    margin-bottom: -1px;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.25rem;
+    border-top-right-radius: 0.25rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus {
+    border-color: #e9ecef #e9ecef #dee2e6;
+    isolation: isolate;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: 600;
+}
+
+/* Empty state for filtered tabs */
+.tab-pane .alert {
+    margin: 1rem;
+    border-radius: 0.25rem;
+}
+
+/* Topic tag styling */
+p.small.text-primary {
+    display: inline-block;
+    background-color: rgba(13, 110, 253, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Make tab transitions smoother */
+.tab-content .tab-pane {
+    transition: opacity 0.15s linear;
+}
+
+/* Ensure tab content takes full height */
+.tab-content {
+    min-height: 100px;
+}
+
+/* Adjust padding for first and last items in list */
+.materials-list .material-item:first-child {
+    border-top: 1px solid #dee2e6;
+}
+
+.materials-list .material-item:last-child {
+    border-bottom: none;
+}
+
+</style>
+{% endblock %}

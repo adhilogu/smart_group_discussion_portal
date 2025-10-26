@@ -1,0 +1,141 @@
+{% extends "layouts/base-auth.html" %}
+{% load static %}
+
+{% block title %}Register User{% endblock title %}
+
+{% block content %}
+
+  <div class="auth-main" style="background-image: url('{% static 'newicons/bg-img.webp' %}'); background-size: cover; background-position: center center; background-repeat: no-repeat; background-attachment: fixed; overflow-x: hidden; width: 100%; max-width: 100vw; left: 0; right: 0; margin: 0 auto;">
+    <div class="auth-wrapper v1">
+      <div class="auth-form">
+        <div class="position-relative my-5">
+
+          <div class="card mb-0">
+            <form method="post" class="card-body" enctype="multipart/form-data">
+              {% csrf_token %}
+
+              <div class="text-center">
+                <a href="{% url "index" %}">
+                  <div>
+                    <img src="{% static 'newicons/bitlogo_dark.png' %}" alt="img" style="width: 180px; height: 90px;">
+                  </div>
+                </a>
+              </div>
+              <h4 class="text-center f-w-500 mt-4 mb-3">Sign up</h4>
+
+              <!-- Move user type to the beginning -->
+              <div class="form-group mb-3">
+                {{ form.user_type }}
+                <span class="d-block mt-1 text-danger">{{ form.user_type.errors }}</span>
+              </div>
+
+              <!-- Student Field (Roll Number) -->
+              <div id="student-roll-div" style="display: none;">
+                <div class="form-group mb-3">
+                  {{ form.roll_number }}
+                  <span class="d-block mt-1 text-danger">{{ form.roll_number.errors }}</span>
+                </div>
+              </div>
+
+              <!-- Faculty Field (Staff ID) -->
+              <div id="faculty-id-div" style="display: none;">
+                <div class="form-group mb-3">
+                  {{ form.staff_id }}
+                  <span class="d-block mt-1 text-danger">{{ form.staff_id.errors }}</span>
+                </div>
+              </div>
+
+              <!-- Loop through all fields except user_type, roll_number, and staff_id -->
+              {% for field in form %}
+                {% if field.name != 'user_type' and field.name != 'roll_number' and field.name != 'staff_id' %}
+                  <div class="form-group mb-3">
+                    {{ field }}
+                    <span class="d-block mt-1 text-danger">{{ field.errors }}</span>
+                  </div>
+                {% endif %}
+              {% endfor %}
+
+              <div class="d-flex mt-1 justify-content-between">
+                <div class="form-check">
+                  <input class="form-check-input input-primary" type="checkbox" id="customCheckc1" checked="">
+                  <label class="form-check-label text-muted" for="customCheckc1">I agree to all the Terms & Condition</label>
+                </div>
+              </div>
+              <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary shadow px-sm-4">Sign up</button>
+              </div>
+              <div class="d-flex justify-content-between align-items-end mt-4">
+                <h6 class="f-w-500 mb-0">Already have an Account?</h6>
+                <a href="{% url "login" %}" class="link-primary">Login</a>
+              </div>
+
+              {% if registrations_left > 0 %}
+              <div class="alert alert-info text-center" role="alert">
+                You can register {{ registrations_left }} more account{{ registrations_left|pluralize }} in this session.
+              </div>
+               {% endif %}
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Use the correct ID as specified in your form definition
+    const userTypeSelect = document.getElementById('user_type');
+    const studentRollDiv = document.getElementById('student-roll-div');
+    const facultyIdDiv = document.getElementById('faculty-id-div');
+    const rollNumberField = document.getElementById('roll_number_field');
+    const staffIdField = document.getElementById('staff_id_field');
+
+    // Function to toggle field visibility
+    function toggleFields() {
+      if (userTypeSelect.value === 'STUDENT') {
+        // Show roll number, hide staff ID
+        studentRollDiv.style.display = 'block';
+        facultyIdDiv.style.display = 'none';
+
+        // Make roll number required
+        rollNumberField.required = true;
+
+        // Make staff ID not required
+        staffIdField.required = false;
+
+        // Clear staff ID value
+        staffIdField.value = '';
+      } else if (userTypeSelect.value === 'FACULTY') {
+        // Show staff ID, hide roll number
+        studentRollDiv.style.display = 'none';
+        facultyIdDiv.style.display = 'block';
+
+        // Make roll number not required
+        rollNumberField.required = false;
+
+        // Make staff ID required
+        staffIdField.required = true;
+
+        // Clear roll number value
+        rollNumberField.value = '';
+      } else {
+        // If no user type is selected, hide both fields
+        studentRollDiv.style.display = 'none';
+        facultyIdDiv.style.display = 'none';
+      }
+    }
+
+    // Set initial state
+    toggleFields();
+
+    // Add event listener for changes
+    userTypeSelect.addEventListener('change', toggleFields);
+
+    // Log to check if the elements are found
+    console.log("User Type:", userTypeSelect);
+    console.log("Roll Number:", rollNumberField);
+    console.log("Staff ID:", staffIdField);
+  });
+</script>
+
+{% endblock content %}

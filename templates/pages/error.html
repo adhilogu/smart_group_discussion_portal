@@ -1,0 +1,65 @@
+{% load i18n static admin_datta %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_direction as direction %}
+{% get_admin_setting as admin_setting %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Error - {{ error_title|default:"Access Error" }}</title>
+
+    {% include "includes/head.html" %}
+    {% block extrastyle %}{% endblock extrastyle %}
+    {% block extrahead %}{% endblock extrahead %}
+
+    <!-- Required CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+            <div class="col-md-8 col-lg-6">
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-body p-5 text-center">
+                        <!-- Error Icon -->
+                        <div class="display-1 mb-4 text-danger">
+                            <i class="bi bi-exclamation-circle"></i>
+                        </div>
+
+                        <!-- Error Title -->
+                        <h2 class="mb-3 fw-bold text-danger">{{ error_title|default:"Access Error" }}</h2>
+
+                        <!-- Error Message -->
+                        <div class="mb-4">
+                            <p class="lead">{{ error_message|default:"You don't have permission to access this page." }}</p>
+                            {% if error_details %}
+                            <div class="alert alert-light text-start">
+                                <p class="small mb-0">{{ error_details }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Back Buttons -->
+                        <div class="d-flex flex-column flex-md-row gap-2 justify-content-center mt-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                                <i class="feather icon-arrow-left me-2"></i>Go Back
+                            </a>
+                            <a href="{% url 'my_slots_page' %}" class="btn btn-primary">
+                                <i class="feather icon-home me-2"></i>My Slots Page
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help Text -->
+                <div class="text-center text-muted small">
+                    <p>Contact your host.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

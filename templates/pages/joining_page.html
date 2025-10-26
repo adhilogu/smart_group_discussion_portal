@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+{% load i18n static admin_datta %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_direction as direction %}
+{% get_admin_setting as admin_setting %}
+<html lang="en">
+  <head>
+    <title>{% block title %} Join-Room {% endblock title %} </title>
+    <link rel="canonical" href="https://app-generator.dev/product/datta-able/django/" />
+    {% include "includes/head.html" %}
+    {% block extrastyle %}{% endblock extrastyle %}
+    {% block extrahead %}{% endblock extrahead %}
+  </head>
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Welcome Card -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <!-- Left side - Image (30%) -->
+                        <div class="col-4 d-flex align-items-center justify-content-center">
+                            {% if slot_group.event.event_photo %}
+                            <img src="{{ slot_group.event.event_photo.url }}" alt="{{ slot_group.event.event_name }}" class="rounded img-fluid" style="max-width: 100%; max-height: 120px; object-fit: cover;">
+                            {% else %}
+                            <div class="rounded bg-light d-flex align-items-center justify-content-center" style="width: 100%; height: 120px;">
+                                <i class="feather icon-image text-secondary" style="font-size: 40px;"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Right side - Information (70%) -->
+                        <div class="col-8">
+                            <div class="mb-3">
+                                <h4 class="mb-1">Welcome, {{ request.user.userprofile.name }}!</h4>
+                                <h5 class="text-primary mb-1">{{ slot_group.event.event_name }}</h5>
+                                <span class="badge bg-primary">Level {{ slot_group.level.level }} - {{ slot_group.level.name }}</span>
+                            </div>
+
+                            <!-- Session Details in Mini Cards -->
+                            <div class="row g-2">
+                                <!-- Group Card -->
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-2 h-100">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; min-width: 32px;">
+                                                <i class="feather icon-users text-white" style="font-size: 16px;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted small">Group</div>
+                                                <div class="fw-bold">{{ participant.group_name }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Slot ID Card -->
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-2 h-100">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; min-width: 32px;">
+                                                <i class="feather icon-hash text-white" style="font-size: 16px;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted small">Slot ID</div>
+                                                <div class="fw-bold">{{ slot.slot_id }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Venue Card -->
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-2 h-100">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-info d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; min-width: 32px;">
+                                                <i class="feather icon-map-pin text-white" style="font-size: 16px;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted small">Venue</div>
+                                                <div class="fw-bold">{{ slot.venue }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Group Status Card -->
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-2 h-100">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; min-width: 32px;">
+                                                <i class="feather icon-activity text-white" style="font-size: 16px;"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted small">Status</div>
+                                                <div class="fw-bold group-status">
+                                                    {% if slot_group.start_status == 'start' %}
+                                                    <span class="text-success">Started</span>
+                                                    {% elif slot_group.start_status == 'pause' %}
+                                                    <span class="text-warning">Paused</span>
+                                                    {% else %}
+                                                    <span class="text-danger">Ended</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group Members Card -->
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-light py-3">
+                    <h5 class="mb-0">
+                        <i class="feather icon-users me-2"></i>Group Members
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="members-list">
+                        {% for member in group_members %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3" data-user-id="{{ member.user.id }}">
+                            <div class="d-flex align-items-center">
+                                <!-- User Profile Image -->
+                               {% if member.user.photo %}
+                                <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="feather icon-user text-secondary" style="font-size: 20px;"></i>
+                                </div>
+                                {% endif %}
+
+                                <!-- User Details -->
+                                <div>
+                                    <h5 class="mb-0">{{ member.user.name }}</h5>
+                                    <small class="text-muted">{{ member.user.roll_number }}</small>
+                                </div>
+                            </div>
+
+                            <!-- Join Status -->
+                            {% if member.joined %}
+                            <span class="badge rounded-pill bg-success px-4 py-2 fs-6">
+                                <i class="feather icon-check me-2" style="font-size: 12px;"></i>Joined
+                            </span>
+                            {% else %}
+                            <span class="badge rounded-pill bg-warning px-4 py-2 fs-6">
+                                <div class="spinner-border spinner-border-sm text-light me-2" style="width: 12px; height: 12px;" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                Waiting
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-center py-3">
+                    <div id="member-count" class="text-muted">
+                        <span id="joined-count">{{ joined_count }}</span> of <span id="total-count">{{ total_count }}</span> members have joined
+                    </div>
+                </div>
+            </div>
+
+            <!-- Launch Button -->
+            <div class="text-center mb-4">
+                <form method="get" action="{% url 'room_page' slot.slot_id %}">
+                    <input type="hidden" name="group" value="{{ participant.group_name }}">
+                    <button type="submit" id="launch-button" class="btn btn-primary btn-lg px-5 py-3" {% if not all_joined and slot_group.start_status == 'paused' %}disabled{% endif %} >
+                        <i class="feather icon-play-circle me-2"></i>Launch Room
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuration
+    const config = {
+        pollInterval: 1000,  // 1 second for regular polling
+        slotId: "{{ slot.slot_id }}",
+        groupName: "{{ participant.group_name }}",
+        currentUserId: "{{ request.user.userprofile.id }}"
+    };
+
+    // Utility functions
+    const utils = {
+        // Get CSRF token
+        getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        },
+
+        // Create form data
+        createFormData(data) {
+            const formData = new FormData();
+            for (const [key, value] of Object.entries(data)) {
+                formData.append(key, value);
+            }
+            formData.append('csrfmiddlewaretoken', this.getCsrfToken());
+            return formData;
+        }
+    };
+
+    // UI Update functions
+    const ui = {
+        // Update member status
+        updateMemberStatus(userId, joined) {
+            const memberEl = document.querySelector(`.list-group-item[data-user-id="${userId}"]`);
+            if (!memberEl) return;
+
+            const badgeEl = memberEl.querySelector('.badge');
+            if (!badgeEl) return;
+
+            if (joined) {
+                badgeEl.className = 'badge rounded-pill bg-success px-4 py-2 fs-6';
+                badgeEl.innerHTML = '<i class="feather icon-check me-2" style="font-size: 12px;"></i>Joined';
+            } else {
+                badgeEl.className = 'badge rounded-pill bg-warning px-4 py-2 fs-6';
+                badgeEl.innerHTML = `
+                    <div class="spinner-border spinner-border-sm text-light me-2" style="width: 12px; height: 12px;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Waiting`;
+            }
+        },
+
+        // Update counts and button state
+        updateCounts(joinedCount, totalCount, allJoined) {
+            document.getElementById('joined-count').textContent = joinedCount;
+            document.getElementById('total-count').textContent = totalCount;
+
+            const launchButton = document.getElementById('launch-button');
+            if (launchButton) {
+                launchButton.disabled = !allJoined;
+            }
+        },
+
+        // Update group status
+        updateGroupStatus(status) {
+            const statusEl = document.querySelector('.group-status span');
+            if (!statusEl) return;
+
+            if (status === 'start') {
+                statusEl.className = 'text-success';
+                statusEl.textContent = 'Started';
+            } else if (status === 'pause') {
+                statusEl.className = 'text-warning';
+                statusEl.textContent = 'Paused';
+            } else if (status === 'end') {
+                statusEl.className = 'text-danger';
+                statusEl.textContent = 'Ended';
+                // If group is ended, redirect
+                window.location.href = '{% url "my_slots_page" %}';
+            }
+        }
+    };
+
+    // API functions
+    const api = {
+        // Notify server about join status - explicit to leave on exit
+        async updateJoinStatus(leave = false) {
+            try {
+                console.log(`Updating status: leave=${leave}`);
+
+                // Always use synchronous XMLHttpRequest when leaving to ensure completion
+                if (leave) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `/join/${config.slotId}/update-status/`, false); // false = synchronous
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+                    const formData = utils.createFormData({
+                        leave: 'true',
+                        group_name: config.groupName
+                    });
+                    xhr.send(formData);
+
+                    console.log("Leave status updated synchronously");
+                    return { status: 'success', joined: false };
+                }
+
+                // For joining, use async fetch
+                const response = await fetch(`/join/${config.slotId}/update-status/`, {
+                    method: 'POST',
+                    body: utils.createFormData({
+                        leave: leave.toString(),
+                        group_name: config.groupName
+                    }),
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update status');
+                }
+
+                const result = await response.json();
+
+                // Force immediate status check after updating
+                setTimeout(() => this.checkStatus(), 300);
+
+                return result;
+            } catch (error) {
+                console.error('Error updating join status:', error);
+                return null;
+            }
+        },
+
+        // Check status of all members
+        async checkStatus() {
+            try {
+                const timestamp = new Date().getTime(); // Add timestamp to prevent caching
+                const response = await fetch(`/join/${config.slotId}/check-status/?_=${timestamp}&group_name=${config.groupName}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check status');
+                }
+
+                const data = await response.json();
+
+                // Check if we need to update our own status
+                const currentUser = data.members?.find(m => m.user_id == config.currentUserId);
+                if (currentUser && !currentUser.joined) {
+                    // Our own status shows as not joined, but we're still here - fix it
+                    this.updateJoinStatus(false);
+                }
+
+                // Update UI for each member
+                if (data.members) {
+                    data.members.forEach(member => {
+                        ui.updateMemberStatus(member.user_id, member.joined);
+                    });
+                }
+
+                // Update counts and button
+                if ('joined_count' in data && 'total_count' in data) {
+                    ui.updateCounts(data.joined_count, data.total_count, data.all_joined);
+                }
+
+                // Check group status
+                if (data.group_status) {
+                    ui.updateGroupStatus(data.group_status);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('Error checking status:', error);
+                return null;
+            }
+        }
+    };
+
+    // Ensure we mark as left on page close/reload
+    let hasMarkedAsLeft = false;
+
+    function markAsLeft() {
+        if (!hasMarkedAsLeft) {
+            hasMarkedAsLeft = true;
+            api.updateJoinStatus(true);
+            console.log("Marked as left");
+        }
+    }
+
+    // Initialize
+    function init() {
+        // Make sure all list items have user ID data attributes
+        document.querySelectorAll('.list-group-item').forEach((item, index) => {
+            const memberId = {{ group_members_json|safe }}[index].id;
+            item.setAttribute('data-user-id', memberId);
+        });
+
+        // Mark current user as joined
+        api.updateJoinStatus(false);
+
+        // Initial UI update
+        ui.updateMemberStatus(config.currentUserId, true);
+
+        // Start polling
+        const intervalId = setInterval(() => {
+            api.checkStatus();
+        }, config.pollInterval);
+
+        // Handle page unload/close events
+        window.addEventListener('beforeunload', function() {
+            clearInterval(intervalId);
+            markAsLeft();
+        });
+
+        // Handle page close more reliably (for Firefox)
+        window.addEventListener('pagehide', function() {
+            markAsLeft();
+        });
+
+        // Handle tab visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden') {
+                // When tab is hidden or switched, mark as not joined
+                markAsLeft();
+            } else if (document.visibilityState === 'visible') {
+                // When tab becomes visible again, mark as joined
+                hasMarkedAsLeft = false;
+                api.updateJoinStatus(false);
+            }
+        });
+
+        // Handle page navigation
+        window.addEventListener('unload', function() {
+            markAsLeft();
+        });
+
+        // Handle clicks on links that take you away from the page
+        document.addEventListener('click', function(e) {
+            // If clicking a link that navigates away
+            if (e.target.tagName === 'A' && e.target.href && !e.target.href.includes(window.location.pathname)) {
+                markAsLeft();
+            }
+        });
+
+        // Handle form submissions that navigate away
+        document.addEventListener('submit', function() {
+            markAsLeft();
+        });
+
+        // Failsafe - even if all other methods fail
+        window.onbeforeunload = function() {
+            markAsLeft();
+            return null; // Don't show confirmation dialog
+        };
+    }
+
+    // Start everything
+    init();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1675 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}My Slots{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+    <div class="pc-content">
+
+        <!-- Join Group Button in Top Right -->
+        <div class="row mb-4">
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" class="btn btn-primary d-flex flex-column align-items-center"
+                        data-bs-toggle="modal" data-bs-target="#joinQuickSlotModal"
+                        style="min-width: auto; padding: 8px 12px;">
+                        <i class="bi bi-qr-code-scan"></i>
+                    <span class="mt-1 d-none d-md-inline">Join Group</span>
+                    <span class="mt-1 d-inline d-md-none" style="font-size: 10px;">Join Group</span>
+                </button>
+            </div>
+        </div>
+
+        {% if started_slots %}
+        <!-- Started Slots -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="text-success mb-3">
+                    <i class="feather icon-play-circle me-2"></i>Started Slots
+                </h4>
+            </div>
+
+            {% for slot in started_slots %}
+             <div class="col-md-7 col-lg-4 mb-3">
+                <div class="card shadow-sm position-relative border-0 rounded-3 overflow-hidden {% if slot.id|stringformat:'s' == highlighted_group_id %}highlight-slot{% endif %}">
+                    <!-- Ticket header with status -->
+                    <div class="bg-success text-white px-3 py-2 d-flex justify-content-between align-items-center">
+                        <span class="small"><i class="feather icon-play me-1"></i> Started</span>
+                    </div>
+
+                    <!-- Main content area -->
+                    <div class="card-body p-3">
+                        <!-- Event with Image -->
+                        <div class="d-flex mb-3 pb-2 border-bottom">
+                            <!-- Event image -->
+                            {% if slot.event.event_photo %}
+                            <div class="me-3">
+                                <img src="{{ slot.event.event_photo.url }}" alt="{{ slot.event.event_name }}" class="rounded" style="width: 90px; height: 60px; object-fit: cover;">
+                            </div>
+                            {% else %}
+                            <div class="me-3 rounded bg-light d-flex align-items-center justify-content-center" style="width: 70px; height: 60px; min-width: 70px;">
+                                <i class="feather icon-image text-secondary" style="font-size: 28px;"></i>
+                            </div>
+                            {% endif %}
+
+                            <!-- Event name and level -->
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1 fs-4">{{ slot.event.event_name }}</h5>
+                                <div class="badge bg-primary fs-8">Level {{ slot.level.level }} - {{ slot.level.name }}</div>
+
+                            </div>
+                        </div>
+
+                        <!-- Group and Slot ID in a single row - Bigger and more visible -->
+                        <div class="d-flex justify-content-center gap-4 mb-3 pb-1 border-bottom">
+                            <div class="alert alert-info rounded-3 text-center p-2" style="min-width: 120px; flex: 1;">
+                                <div class="text-black small">Group</div>
+                                <div class="text-black fw-bold fs-4">{{ slot.group_name }}</div>
+                            </div>
+
+                            <div class="alert alert-info  rounded-3 text-center p-2" style="min-width: 120px; flex: 1;">
+                                <div class="text-black small">Slot ID</div>
+                                <div class="text-black fw-bold fs-4">{{ slot.slot.slot_id }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-calendar text-primary me-2" style="width: 16px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Date</div>
+                                        <div class="fw-bold text-dark">{{ slot.date|date:"d M Y" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-clock text-primary me-2" style="width: 16px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Time</div>
+                                        <div class="fw-bold text-dark">
+                                            {{ slot.start_time|time:"g:i A" }} - {{ slot.end_time|time:"g:i A" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location and Participants -->
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-map-pin text-primary me-2" style="width: 16px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Location</div>
+                                        <div class="fw-bold text-dark">{{ slot.venue }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pe-5" >
+                                <div class="alert alert-success  p-2 pe-3 d-flex align-items-center border-0 ">
+                                    <i class="feather icon-user-plus text-black me-2" style="width: 25px; font-size: 18px;"></i>
+                                    <div>
+                                        <div class="fw-bold text-black">{{ slot.participant }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Join Button -->
+                        <a href="{% url 'joining_page' slot.slot.slot_id %}?group={{ slot.group_name }}" class="btn btn-success w-100">
+                            <i class="feather icon-log-in me-2"></i>Join Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Separator -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <hr class="border-2">
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Paused Slots -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h4 class="text-warning mb-3">
+                    <i class="feather icon-pause-circle me-2"></i>Upcoming Group Schedules
+                </h4>
+            </div>
+            {% for slot in paused_slots %}
+            <div class="col-md-7 col-lg-4 mb-3">
+                <div class="card shadow-sm position-relative border-0 rounded-3 overflow-hidden {% if slot.id|stringformat:'s' == highlighted_group_id %}highlight-slot{% endif %}">
+                    <!-- Ticket header with status -->
+                    <div class="bg-warning text-white px-3 py-2 d-flex justify-content-between align-items-center">
+                        <span class="small"><i class="feather icon-pause me-1"></i> Yet to Start</span>
+                    </div>
+
+                    <!-- Main content area -->
+                    <div class="card-body p-3">
+                        <!-- Event with Image -->
+                        <div class="d-flex mb-3 pb-2 border-bottom">
+                            <!-- Event image -->
+                            {% if slot.event.event_photo %}
+                            <div class="me-3">
+                                <img src="{{ slot.event.event_photo.url }}" alt="{{ slot.event.event_name }}" class="rounded" style="width: 90px; height: 60px; object-fit: cover;">
+                            </div>
+                            {% else %}
+                            <div class="me-3 rounded bg-light d-flex align-items-center justify-content-center" style="width: 70px; height: 60px; min-width: 70px;">
+                                <i class="feather icon-image text-secondary" style="font-size: 28px;"></i>
+                            </div>
+                            {% endif %}
+
+                            <!-- Event name and level -->
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1 fs-4">{{ slot.event.event_name }}</h5>
+                                <div class="badge bg-primary fs-8">Level {{ slot.level.level }} - {{ slot.level.name }}</div>
+
+
+                            </div>
+                        </div>
+
+                        <!-- Group and Slot ID in a single row - Bigger and more visible -->
+                        <div class="d-flex justify-content-center gap-4 mb-3 pb-1 border-bottom">
+                            <div class="alert alert-info rounded-3 text-center p-2" style="min-width: 120px; flex: 1;">
+                                <div class="text-black small">Group</div>
+                                <div class="text-black fw-bold fs-4">{{ slot.group_name }}</div>
+                            </div>
+
+                            <div class="alert alert-info  rounded-3 text-center p-2" style="min-width: 120px; flex: 1;">
+                                <div class="text-black small">Slot ID</div>
+                                <div class="text-black fw-bold fs-4">{{ slot.slot.slot_id }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Date and Time -->
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-calendar text-primary me-2" style="width: 16px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Date</div>
+                                        <div class="fw-bold text-dark">{{ slot.date|date:"d M Y" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-clock text-primary me-2" style="width: 16px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Time</div>
+                                        <div class="fw-bold text-dark">
+                                            {{ slot.start_time|time:"g:i A" }} - {{ slot.end_time|time:"g:i A" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status and Participants -->
+                        <div class="d-flex justify-content-between mb-1">
+                            <div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-flag text-primary me-2" style="width: 16px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Status</div>
+                                        <div class="fw-bold text-dark">{{ slot.start_status|title }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pe-5">
+
+                                <div class="alert alert-success  p-2 pe-3 d-flex align-items-center border-0 ">
+                                    <i class="feather icon-user-plus text-black me-2" style="width: 25px; font-size: 18px;"></i>
+                                    <div>
+                                        <div class="fw-bold text-black">{{ slot.participant_count }}</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {% if slot.start_status == 'start' %}
+                        <!-- Join Button -->
+                        <a href="{% url 'joining_page' slot.slot.slot_id %}?group={{ slot.group_name }}" class="btn btn-success w-100">
+                            <i class="feather icon-log-in me-2"></i>Join Now
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-info text-center p-4">
+                    <i class="feather icon-clock mb-3" style="font-size: 48px;"></i>
+                    <h5>No Pre-Booked Groups</h5>
+                    <p class="text-muted mb-0">You don't have any pre-booked Groups.</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Group Confirmation Modal -->
+<div class="modal fade" id="groupConfirmationModal" tabindex="-1" aria-labelledby="groupConfirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title" id="groupConfirmationModalLabel">Join Group Confirmation</h5>
+                <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Loading State -->
+                <div id="group-confirmation-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3">Loading group details...</p>
+                </div>
+
+                <!-- Error Message -->
+                <div id="group-confirmation-error" class="alert alert-danger" style="display: none;">
+                    <i class="feather icon-alert-circle me-2"></i>
+                    <span id="group-confirmation-error-message"></span>
+                </div>
+
+                <!-- Group Details Content -->
+                <div id="group-confirmation-content" style="display: none;">
+                    <!-- Group and Slot ID -->
+                    <div class="text-center mb-4">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle p-3 mb-3">
+                            <i class="feather icon-users text-primary" style="font-size: 32px;"></i>
+                        </div>
+                        <h4 class="mb-0" id="group-name">Group Name</h4>
+                        <p class="text-muted" id="quick-slot-id">Slot ID</p>
+                    </div>
+
+                    <!-- Event, Level and Participants -->
+                    <div class="bg-light rounded p-3 mb-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="feather icon-award text-primary me-2" style="min-width: 18px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Event</div>
+                                        <div class="fw-bold" id="event-name">Event Name</div>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="feather icon-layers text-primary me-2" style="min-width: 18px;"></i>
+                                    <div>
+                                        <div class="text-muted small">Level</div>
+                                        <div class="fw-bold" id="level-name">Level</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex align-items-center h-100 justify-content-center">
+                                    <div class="text-center">
+                                        <div class="text-muted small">Participants</div>
+                                        <div class="fw-bold fs-4" id="participant-count">-0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Join Form -->
+                    <form id="join-group-form" method="post" action="">
+                        {% csrf_token %}
+                        <input type="hidden" id="group-id-input" name="group_id" value="">
+                        <div class="d-grid gap-2">
+                            <button type="submit" id="join-button" class="btn btn-primary">
+                                <i class="feather icon-log-in me-1"></i>Join Group
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="modal fade" id="joinQuickSlotModal" tabindex="-1" aria-labelledby="joinQuickSlotModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white py-2">
+                <h5 class="modal-title fs-6" id="joinQuickSlotModalLabel">Join Group</h5>
+                <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Camera Button -->
+                <div class="text-center mb-2">
+                    <button id="startScan" class="btn btn-link p-0">
+                        <i class="feather icon-camera" style="font-size: 32px; color: #555;"></i>
+                    </button>
+                </div>
+
+                <!-- Camera Error Alert -->
+                <div id="cameraErrorAlert" class="alert alert-warning py-2 px-3 small" style="display: none;">
+                    <i class="feather icon-alert-triangle me-1"></i>
+                    <span id="cameraErrorMessage" class="small">Camera access might require HTTPS.</span>
+                </div>
+
+                <!-- QR Success Alert -->
+                <div id="qrSuccessAlert" class="alert alert-success py-2 px-3 small" style="display: none;">
+                    <i class="feather icon-check-circle me-1"></i>
+                    <span id="qrSuccessMessage" class="small">QR code detected!</span>
+                </div>
+
+                <!-- QR Code Scanner Section - Optimized for Webview -->
+                <div id="scannerContainer" class="mb-3 text-center" style="display: none;">
+                    <div class="card border mb-2">
+                        <!-- Full-width container for webview compatibility -->
+                        <div id="qr-reader" style="width: 100%; max-height: 350px; overflow: hidden; position: relative; border-radius: 4px;">
+                            <!-- The scanner will be placed here -->
+                            <div id="scan-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(40, 167, 69, 0.5); z-index: 9999; pointer-events: none; visibility: visible;">
+                                <div class="d-flex justify-content-center align-items-center h-100">
+                                    <i class="feather icon-check-circle" style="font-size: 64px; color: white;"></i>
+                                </div>
+                            </div>
+
+                            <!-- QR Scanner Highlight Box - Responsive sizing -->
+                            <div class="qr-highlight-box" style="width: 280px; height: 280px; max-width: 90%; max-height: 80%;">
+                                <!-- Animated scan line -->
+                                <div class="scan-line"></div>
+                            </div>
+
+                            <!-- Scan instructions - Better visibility -->
+                            <div style="position: absolute; bottom: 15px; left: 0; right: 0; text-align: center; color: #fff; font-size: 16px; z-index: 50; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); background-color: rgba(0,0,0,0.4); padding: 8px 0;">
+                                Position QR code in the box
+                            </div>
+                        </div>
+                        <div class="card-footer p-2 bg-light">
+                            <button id="closeScanner" class="btn btn-sm btn-outline-secondary w-100">
+                                <i class="feather icon-x-circle me-1"></i>Close Camera
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Code Entry -->
+                <form id="quickSlotForm" method="post" action="#">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <input type="text" class="form-control text-center" id="quickSlotCode" name="quick_slot_id" placeholder="Enter group code (e.g., 1234/A12)" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="feather icon-log-in me-1"></i>Join Group
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}
+
+
+{% block extra_css %}
+<style>
+.highlight-slot {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+    border: 2px solid #28a745 !important;
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.2) !important;
+    transform: translateY(-5px);
+    transition: all 0.3s ease;
+    transform: scale(1.05);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+}
+
+.card {
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.qr-highlight-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgba(40, 167, 69, 0.7);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scan-line {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background-color: rgba(40, 167, 69, 0.8);
+    animation: scanLine 2s infinite linear;
+}
+
+@keyframes scanLine {
+    0% { top: 0; }
+    50% { top: 100%; }
+    100% { top: 0; }
+}
+/* QR scanner improvements */
+@media (max-width: 767.98px) {
+    #qr-reader {
+        height: 400px !important; /* Taller on mobile */
+    }
+
+    .qr-highlight-box {
+        width: 90% !important;
+        height: 70% !important;
+        border-width: 4px !important;
+    }
+
+    /* Make the modal larger on mobile */
+    #joinQuickSlotModal .modal-dialog {
+        max-width: 95% !important;
+        margin: 10px auto;
+    }
+
+    /* Increase the visibility of the scan line */
+    .scan-line {
+        height: 4px !important;
+        background-color: rgba(40, 167, 69, 0.9) !important;
+    }
+}
+
+/* Enhanced QR highlight box */
+.qr-highlight-box {
+    border: 3px solid rgba(40, 167, 69, 0.7);
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+    border-radius: 10px;
+}
+
+/* Brighter scan line */
+.scan-line {
+    height: 3px;
+    background-color: rgba(40, 167, 69, 0.8);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.8);
+    animation: scanLine 2s infinite linear;
+}
+</style>
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode@2.3.4/html5-qrcode.min.js"></script>
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Highlight animation for selected slot
+    const highlightedSlot = document.querySelector('.highlight-slot');
+    if (highlightedSlot) {
+        // Highlight animation code (unchanged)
+        highlightedSlot.style.transition = 'all 0.5s ease-in-out';
+        highlightedSlot.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+        setTimeout(() => {
+            highlightedSlot.style.backgroundColor = 'rgba(40, 167, 69, 0.1)';
+            highlightedSlot.style.transform = 'translateY(-10px)';
+            highlightedSlot.style.boxShadow = '0 0 15px rgba(40, 167, 69, 0.2)';
+            highlightedSlot.style.border = '2px solid #28a745';
+        }, 200);
+        setTimeout(() => {
+            highlightedSlot.style.backgroundColor = '';
+            highlightedSlot.style.transform = '';
+            highlightedSlot.style.boxShadow = '';
+            highlightedSlot.style.border = '';
+            setTimeout(() => {
+                highlightedSlot.style.transition = '';
+                highlightedSlot.classList.remove('highlight-slot');
+            }, 500);
+        }, 2000);
+    }
+
+    // QR Scanner elements
+    const startScanButton = document.getElementById('startScan');
+    const closeButton = document.getElementById('closeScanner');
+    const scannerContainer = document.getElementById('scannerContainer');
+    const cameraErrorAlert = document.getElementById('cameraErrorAlert');
+    const qrReaderDiv = document.getElementById('qr-reader');
+    let html5QrCode;
+
+    // Prevent multiple scan attempts
+    let isScanning = false;
+
+
+    function startQRScanner() {
+        console.log("Attempting to start QR scanner...");
+
+        // Check for library availability
+        if (typeof Html5Qrcode === 'undefined') {
+            console.error("Html5Qrcode library not loaded");
+            showCameraError("QR scanner library not loaded. Please refresh the page.");
+            return;
+        }
+
+        // Ensure qr-reader div is clear
+        if (qrReaderDiv) {
+            qrReaderDiv.innerHTML = '';
+            qrReaderDiv.style.display = 'block';
+        }
+
+        // Show scanner container
+        if (scannerContainer) {
+            scannerContainer.style.display = 'block';
+        }
+
+        // Reset error alert
+        if (cameraErrorAlert) {
+            cameraErrorAlert.style.display = 'none';
+        }
+
+        try {
+            html5QrCode = new Html5Qrcode("qr-reader", {
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+        });
+
+        // Get viewport dimensions
+        const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+const viewportHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+const isMobile = viewportWidth < 768;
+
+const scanBoxWidth = isMobile ? Math.min(viewportWidth * 0.9, 400) : 350;
+const scanBoxHeight = isMobile ? Math.min(viewportHeight * 0.5, 400) : 350;
+
+const config = {
+    fps: 10,
+    qrbox: {
+        width: scanBoxWidth,
+        height: scanBoxHeight
+    },
+    aspectRatio: 4/3, // Better for most phone cameras
+    showTorchButtonIfSupported: true,
+    showZoomSliderIfSupported: true
+};
+
+        // Start scanning
+        html5QrCode.start(
+            { facingMode: "environment" }, // Prefer back camera
+            config,
+            onScanSuccess,
+            onScanFailure
+        ).then(() => {
+            console.log("QR Scanner started successfully");
+
+            // Enhance the visual elements to match the scanner config
+            setTimeout(() => {
+                const highlightBox = document.querySelector('.qr-highlight-box');
+                if (highlightBox) {
+                    highlightBox.style.width = (scanBoxWidth + 20) + 'px';
+                    highlightBox.style.height = (scanBoxHeight + 20) + 'px';
+                }
+            }, 500);
+        }).catch((err) => {
+            console.error("Error starting QR scanner:", err);
+            showCameraError(err.message || "Failed to access camera");
+        });
+
+    } catch (error) {
+        console.error("Unexpected error initializing scanner:", error);
+        showCameraError(error.message || "Unexpected camera error");
+    }
+    }
+
+    function showCameraError(message) {
+        console.error("Camera Error:", message);
+
+        if (cameraErrorAlert) {
+            cameraErrorAlert.style.display = 'block';
+            const errorMsg = document.getElementById('cameraErrorMessage');
+            if (errorMsg) {
+                errorMsg.textContent = message;
+            }
+        }
+
+        // Hide scanner container
+        if (scannerContainer) {
+            scannerContainer.style.display = 'none';
+        }
+
+        // Stop scanner if it was started
+        stopScanner();
+    }
+
+
+
+
+    // Check if scanner elements exist
+    if (startScanButton && scannerContainer) {
+        // Start scanner when camera icon is clicked
+        startScanButton.addEventListener('click', function() {
+            if (isScanning) return;
+            isScanning = true;
+
+            console.log("Starting scanner...");
+            // Show scanner container
+            scannerContainer.style.display = 'block';
+
+            try {
+                // Check if HTML5QRCode is available
+                if (typeof Html5Qrcode === 'undefined') {
+                    throw new Error("QR scanner library not loaded");
+                }
+
+                html5QrCode = new Html5Qrcode("qr-reader", {
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+        });
+
+        // Get viewport dimensions
+            const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+            const viewportHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+            const isMobile = viewportWidth < 768;
+
+            // Calculate scan box dimensions more dynamically
+            const scanBoxWidth = isMobile ? Math.min(viewportWidth * 0.85, 400) : 300;
+            const scanBoxHeight = isMobile ? Math.min(viewportHeight * 0.8, 400) : 300;  // Increase mobile height to 40% of viewport
+
+            const config = {
+                fps: 10,
+                qrbox: {
+                    width: scanBoxWidth,
+                    height: scanBoxHeight
+                },
+                aspectRatio: 4/3, // Better for most phone cameras
+                showTorchButtonIfSupported: true,
+                showZoomSliderIfSupported: true
+                };
+                html5QrCode.start(
+                    { facingMode: "environment" }, // Use back camera
+                    config,
+                    onScanSuccess,
+                    (errorMessage) => {
+                        // Silent failure for scanning errors
+                        console.log("Scan error:", errorMessage);
+                    }
+                ).catch(error => {
+                    console.error("Error starting scanner:", error);
+                    handleScannerError(error);
+                });
+            } catch (err) {
+                console.error("Error initializing scanner:", err);
+                handleScannerError(err);
+            }
+        });
+
+        // Function to handle scanner errors
+        function handleScannerError(error) {
+            isScanning = false;
+            if (cameraErrorAlert) {
+                cameraErrorAlert.style.display = 'block';
+                const errorMsg = document.getElementById('cameraErrorMessage');
+                if (errorMsg) {
+                    errorMsg.textContent = error.message || "Camera error. Please check permissions.";
+                }
+            }
+            scannerContainer.style.display = 'none';
+            stopScanner();
+        }
+
+        // Close scanner when close button is clicked
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                stopScanner();
+                scannerContainer.style.display = 'none';
+            });
+        }
+
+        // Close the QR scanner when the modal is closed
+        const joinQuickSlotModal = document.getElementById('joinQuickSlotModal');
+        if (joinQuickSlotModal) {
+            joinQuickSlotModal.addEventListener('hidden.bs.modal', function () {
+                stopScanner();
+                if (scannerContainer) {
+                    scannerContainer.style.display = 'none';
+                }
+                if (cameraErrorAlert) {
+                    cameraErrorAlert.style.display = 'none';
+                }
+            });
+
+            // Also close the camera when modal is about to be hidden
+            joinQuickSlotModal.addEventListener('hide.bs.modal', function () {
+                stopScanner();
+            });
+        }
+    }
+
+    document.addEventListener('submit', function(e) {
+    if (e.target.id === 'quickSlotForm') {
+        e.preventDefault();
+
+        // Get the slot code from input
+        const slotCode = document.getElementById('quickSlotCode').value.trim();
+        if (!slotCode) {
+            alert('Please enter a valid slot code');
+            return;
+        }
+
+        // Close the Quick Slot modal first
+        const quickSlotModal = document.getElementById('joinQuickSlotModal');
+        if (quickSlotModal) {
+            const bsQuickSlotModal = bootstrap.Modal.getInstance(quickSlotModal);
+            if (bsQuickSlotModal) {
+                bsQuickSlotModal.hide();
+            }
+        }
+
+        // Process the slot code
+        const parts = slotCode.split('/');
+
+        if (parts.length === 2) {
+            // Code is in slotId/groupName format
+            const [slotId, groupName] = parts;
+            // Show confirmation modal with details
+            showGroupConfirmation(slotId, groupName);
+        } else {
+            // Single code - try to get details first to confirm
+            const formData = new FormData();
+            formData.append('quick_slot_id', slotCode);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+            // Show confirmation loading modal
+            const confirmModal = document.getElementById('groupConfirmationModal');
+            const confirmLoading = document.getElementById('group-confirmation-loading');
+            const confirmContent = document.getElementById('group-confirmation-content');
+            const confirmError = document.getElementById('group-confirmation-error');
+
+            // Show the modal with loading state
+            const groupConfirmationModal = new bootstrap.Modal(confirmModal);
+            groupConfirmationModal.show();
+
+            // Set loading state
+            if (confirmLoading) confirmLoading.style.display = 'block';
+            if (confirmContent) confirmContent.style.display = 'none';
+            if (confirmError) confirmError.style.display = 'none';
+
+            // Fetch slot details for confirmation
+            fetch('/get-slot-details/', {  // You'll need to create this endpoint
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading state
+                if (confirmLoading) confirmLoading.style.display = 'none';
+
+                if (data.status === 'error') {
+                    // Show error in confirmation modal
+                    if (confirmError) {
+                        confirmError.style.display = 'block';
+                        const errorMessage = document.getElementById('group-confirmation-error-message');
+                        if (errorMessage) {
+                            errorMessage.textContent = data.message || 'Failed to get slot details';
+                        }
+                    }
+                    return;
+                }
+
+                // Got slot details, now show confirmation content
+                if (confirmContent) {
+                    confirmContent.style.display = 'block';
+
+                    // Update details in modal
+                    document.getElementById('group-name').textContent = data.group.name;
+                    document.getElementById('quick-slot-id').textContent = `Slot ID: ${data.slot.id}`;
+                    document.getElementById('event-name').textContent = data.slot.event_name;
+                    document.getElementById('level-name').textContent = `Level ${data.slot.level_number} - ${data.slot.level_name}`;
+
+                    document.getElementById('participant-count').textContent = data.group.participant_count || 0;
+
+                    // Setup form to join on submit
+                    const joinForm = document.getElementById('join-group-form');
+                    if (joinForm) {
+                        // Reset form
+                        joinForm.reset();
+
+                        // Set hidden inputs
+                        const groupIdInput = document.getElementById('group-id-input');
+                        if (groupIdInput) {
+                            groupIdInput.value = data.group.id;
+                        }
+
+                        // Add the quick_slot_id as a hidden input if it doesn't exist
+                        let quickSlotInput = joinForm.querySelector('input[name="quick_slot_id"]');
+                        if (!quickSlotInput) {
+                            quickSlotInput = document.createElement('input');
+                            quickSlotInput.type = 'hidden';
+                            quickSlotInput.name = 'quick_slot_id';
+                            joinForm.appendChild(quickSlotInput);
+                        }
+                        quickSlotInput.value = slotCode;
+
+                        // Set form submission handler
+                        joinForm.onsubmit = function(event) {
+                            event.preventDefault();
+
+                            // Disable button and show loading
+                            const joinButton = document.getElementById('join-button');
+                            if (joinButton) {
+                                joinButton.disabled = true;
+                                joinButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Joining...';
+                            }
+
+                            // Submit the form to actually join
+                            fetch('/join-group-from-qr/', {
+                                method: 'POST',
+                                body: new FormData(joinForm),
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(joinData => {
+                                if (joinData.status === 'success') {
+                                    // Show success message
+                                    confirmContent.innerHTML = `
+                                        <div class="text-center">
+                                            <div class="display-1 text-success mb-3">
+                                                <i class="feather icon-check-circle"></i>
+                                            </div>
+                                            <h3 class="mb-3">Successfully Joined!</h3>
+                                            <div class="alert alert-info">
+                                                <strong>Slot ID:</strong> ${data.slot.id}<br>
+                                                <strong>Group:</strong> ${data.group.name}
+                                            </div>
+                                            <a href="${joinData.redirect_url}" class="btn btn-primary mt-3">
+                                                <i class="feather icon-log-in me-2"></i>Enter Room
+                                            </a>
+                                        </div>
+                                    `;
+                                } else {
+                                    // Show error
+                                    if (confirmError) {
+                                        confirmError.style.display = 'block';
+                                        const errorMsg = document.getElementById('group-confirmation-error-message');
+                                        if (errorMsg) {
+                                            errorMsg.textContent = joinData.message || 'Failed to join group';
+                                        }
+                                    }
+
+                                    // Reset button
+                                    if (joinButton) {
+                                        joinButton.disabled = false;
+                                        joinButton.innerHTML = '<i class="feather icon-log-in me-1"></i>Join Group';
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error joining group:', error);
+
+                                // Show error
+                                if (confirmError) {
+                                    confirmError.style.display = 'block';
+                                    const errorMsg = document.getElementById('group-confirmation-error-message');
+                                    if (errorMsg) {
+                                        errorMsg.textContent = 'An unexpected error occurred';
+                                    }
+                                }
+
+                                // Reset button
+                                if (joinButton) {
+                                    joinButton.disabled = false;
+                                    joinButton.innerHTML = '<i class="feather icon-log-in me-1"></i>Join Group';
+                                }
+                            });
+                        };
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error getting slot details:', error);
+
+                // Hide loading
+                if (confirmLoading) confirmLoading.style.display = 'none';
+
+                // Show error
+                if (confirmError) {
+                    confirmError.style.display = 'block';
+                    const errorMsg = document.getElementById('group-confirmation-error-message');
+                    if (errorMsg) {
+                        errorMsg.textContent = 'An unexpected error occurred';
+                    }
+                }
+            });
+        }
+    }
+});
+
+// Improved modal management - ensure proper closing of modals
+function improveModalManagement() {
+    // Close all modals function
+    window.closeAllModals = function() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) {
+                bsModal.hide();
+            }
+        });
+    };
+
+    // Ensure proper cleanup when any modal is hidden
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('hidden.bs.modal', function() {
+            // Clear any form inside the modal
+            const forms = this.querySelectorAll('form');
+            forms.forEach(form => form.reset());
+
+            // Hide any error messages
+            const errors = this.querySelectorAll('.alert-danger');
+            errors.forEach(error => error.style.display = 'none');
+
+            // If this is the quick slot modal, ensure scanner is stopped
+            if (this.id === 'joinQuickSlotModal') {
+                if (typeof stopScanner === 'function') {
+                    stopScanner();
+                }
+
+                // Reset camera container
+                const scannerContainer = document.getElementById('scannerContainer');
+                if (scannerContainer) {
+                    scannerContainer.style.display = 'none';
+                }
+            }
+        });
+    });
+
+    // Fix for confirmation modal "Cancel" button - ensure it properly hides modal
+    const cancelButtons = document.querySelectorAll('[data-bs-dismiss="modal"]');
+    cancelButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const modal = this.closest('.modal');
+            if (modal) {
+                const bsModal = bootstrap.Modal.getInstance(modal);
+                if (bsModal) {
+                    bsModal.hide();
+                }
+            }
+        });
+    });
+}
+
+// Call the modal management improvement function when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    improveModalManagement();
+});
+
+
+    // Existing stopScanner function
+    function stopScanner() {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop()
+                .then(() => {
+                    console.log('Scanner stopped successfully');
+                    html5QrCode = null;
+                })
+                .catch(err => {
+                    console.error('Error stopping scanner:', err);
+                });
+        }
+    }
+
+
+
+    if (startScanButton) {
+        startScanButton.addEventListener('click', function() {
+            // Request camera permissions first
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(() => {
+                    // Permissions granted, start scanner
+                    startQRScanner();
+                })
+                .catch((err) => {
+                    console.error("Camera permission denied:", err);
+                    showCameraError("Camera access denied. Please grant camera permissions.");
+                });
+        });
+    }
+
+    // Close button event listener
+    if (closeButton) {
+        closeButton.addEventListener('click', function() {
+            stopScanner();
+            if (scannerContainer) {
+                scannerContainer.style.display = 'none';
+            }
+        });
+    }
+
+    // Additional modal close handlers
+    const joinQuickSlotModal = document.getElementById('joinQuickSlotModal');
+    if (joinQuickSlotModal) {
+        joinQuickSlotModal.addEventListener('hidden.bs.modal', stopScanner);
+        joinQuickSlotModal.addEventListener('hide.bs.modal', stopScanner);
+    }
+
+    // Function definitions below
+    function onScanSuccess(decodedText, decodedResult) {
+    // Stop scanning immediately
+    stopScanner();
+
+    console.log(`Code scanned: ${decodedText}`, decodedResult);
+
+    // Parse the QR content in slotId/groupName format
+    const parts = decodedText.split('/');
+    if (parts.length === 2) {
+        const [slotId, groupName] = parts;
+
+        // Show success overlay for scan
+        const scanOverlay = document.getElementById('scan-overlay');
+        if (scanOverlay) {
+            scanOverlay.style.display = 'block';
+        }
+
+        // Vibrate if supported by the device
+        if (navigator.vibrate) {
+            navigator.vibrate([100, 50, 100]);
+        }
+
+        // Close scanner modal
+        const joinQuickSlotModal = document.getElementById('joinQuickSlotModal');
+        if (joinQuickSlotModal) {
+            bootstrap.Modal.getInstance(joinQuickSlotModal).hide();
+        }
+
+        // Show confirmation with group details
+        showGroupConfirmation(slotId, groupName);
+    }
+}
+
+function showGroupConfirmation(slotId, groupName) {
+    // Get modal elements
+    const confirmModal = document.getElementById('groupConfirmationModal');
+    const confirmLoading = document.getElementById('group-confirmation-loading');
+    const confirmContent = document.getElementById('group-confirmation-content');
+    const confirmError = document.getElementById('group-confirmation-error');
+
+    // Show the modal
+    const groupConfirmationModal = new bootstrap.Modal(confirmModal);
+    groupConfirmationModal.show();
+
+    // Reset modal state
+    if (confirmLoading) confirmLoading.style.display = 'block';
+    if (confirmContent) confirmContent.style.display = 'none';
+    if (confirmError) confirmError.style.display = 'none';
+
+    // Prepare form data for the request
+    const formData = new FormData();
+    formData.append('slot_id', slotId);
+    formData.append('group_name', groupName);
+    formData.append('action', 'confirm'); // Add confirm action to only fetch details
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+    // Make AJAX request to get group details WITHOUT joining
+    fetch('/join-group-from-qr/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide loading
+        if (confirmLoading) confirmLoading.style.display = 'none';
+
+        if (data.status === 'error') {
+            // Show error message
+            if (confirmError) {
+                confirmError.style.display = 'block';
+                const errorMsg = document.getElementById('group-confirmation-error-message');
+                if (errorMsg) {
+                    errorMsg.textContent = data.message || 'Failed to get group details';
+                }
+            }
+            return;
+        }
+
+        // Show group details in confirmation modal
+        if (confirmContent) {
+            confirmContent.style.display = 'block';
+
+            // Update details in the modal
+            document.getElementById('group-name').textContent = data.group.name;
+            document.getElementById('quick-slot-id').textContent = `Slot ID: ${slotId}`;
+            document.getElementById('event-name').textContent = data.slot.event_name;
+            document.getElementById('level-name').textContent = `Level ${data.slot.level_number} - ${data.slot.level_name}`;
+            document.getElementById('participant-count').textContent = data.group.participant_count || 0;
+
+
+
+            // Set up the form for joining when the button is clicked
+            const joinForm = document.getElementById('join-group-form');
+            const groupIdInput = document.getElementById('group-id-input');
+            const participantCountEl = document.getElementById('participant-count');
+
+
+            if (participantCountEl) participantCountEl.textContent = data.group.participant_count || 0;
+
+            // Set hidden input values
+            if (groupIdInput) groupIdInput.value = data.group.id;
+
+            // Set up form submission
+            if (joinForm) {
+                joinForm.onsubmit = function(e) {
+                    e.preventDefault();
+
+                    // Show loading state on button
+                    const joinButton = document.getElementById('join-button');
+                    if (joinButton) {
+                        joinButton.disabled = true;
+                        joinButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Joining...';
+                    }
+
+                    // Create form data with join action
+                    const joinFormData = new FormData(joinForm);
+                    joinFormData.append('slot_id', slotId);
+                    joinFormData.append('group_name', groupName);
+
+                    // Now send the actual join request
+                    fetch('/join-group-from-qr/', {
+                        method: 'POST',
+                        body: joinFormData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(joinData => {
+                        if (joinData.status === 'success') {
+                            // Show success message
+                            confirmContent.innerHTML = `
+                                <div class="text-center">
+                                    <div class="display-1 text-success mb-3">
+                                        <i class="feather icon-check-circle"></i>
+                                    </div>
+                                    <h3 class="mb-3">Successfully Joined!</h3>
+                                    <div class="alert alert-info">
+                                        <strong>Slot ID:</strong> ${slotId}<br>
+                                        <strong>Group:</strong> ${groupName}
+                                    </div>
+                                    <a href="${joinData.redirect_url}" class="btn btn-primary mt-3">
+                                        <i class="feather icon-log-in me-2"></i>Enter Room
+                                    </a>
+                                </div>
+                            `;
+                        } else {
+                            // Show error
+                            if (confirmError) {
+                                confirmError.style.display = 'block';
+                                const errorMsg = document.getElementById('group-confirmation-error-message');
+                                if (errorMsg) {
+                                    errorMsg.textContent = joinData.message || 'Failed to join group';
+                                }
+                            }
+
+                            // Reset button
+                            if (joinButton) {
+                                joinButton.disabled = false;
+                                joinButton.innerHTML = '<i class="feather icon-log-in me-1"></i>Join Group';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error joining group:', error);
+                        // Show error
+                        if (confirmError) {
+                            confirmError.style.display = 'block';
+                            const errorMsg = document.getElementById('group-confirmation-error-message');
+                            if (errorMsg) {
+                                errorMsg.textContent = 'An unexpected error occurred';
+                            }
+                        }
+
+                        // Reset button
+                        if (joinButton) {
+                            joinButton.disabled = false;
+                            joinButton.innerHTML = '<i class="feather icon-log-in me-1"></i>Join Group';
+                        }
+                    });
+                };
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error getting group details:', error);
+
+        // Hide loading
+        if (confirmLoading) confirmLoading.style.display = 'none';
+
+        // Show error
+        if (confirmError) {
+            confirmError.style.display = 'block';
+            const errorMsg = document.getElementById('group-confirmation-error-message');
+            if (errorMsg) {
+                errorMsg.textContent = 'An unexpected error occurred';
+            }
+        }
+    });
+}
+
+
+    let isJoiningGroup = false;
+
+    function joinGroupDirectly(slotId, groupName) {
+        // Prevent multiple simultaneous join attempts
+        if (isJoiningGroup) {
+            console.log("Join in progress. Please wait.");
+            return;
+        }
+
+        // Set joining flag
+        isJoiningGroup = true;
+
+        // Prepare form data for the request
+        const formData = new FormData();
+        formData.append('slot_id', slotId);
+        formData.append('group_name', groupName);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        // Get modal elements
+        const confirmLoading = document.getElementById('group-confirmation-loading');
+        const confirmContent = document.getElementById('group-confirmation-content');
+        const confirmError = document.getElementById('group-confirmation-error');
+
+        // Show the modal
+        const groupConfirmationModal = new bootstrap.Modal(document.getElementById('groupConfirmationModal'));
+        groupConfirmationModal.show();
+
+        // Reset modal state
+        if (confirmLoading) confirmLoading.style.display = 'block';
+        if (confirmContent) confirmContent.style.display = 'none';
+        if (confirmError) confirmError.style.display = 'none';
+
+        // Add a small delay to prevent rapid scanning
+        setTimeout(() => {
+            // Send AJAX request to join group
+            fetch('/join-group-from-qr/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset joining flag
+                isJoiningGroup = false;
+
+                // Hide loading state
+                if (confirmLoading) confirmLoading.style.display = 'none';
+
+                if (data.status === 'error') {
+                    // Handle specific error for already in group
+                    if (data.message.toLowerCase().includes('already in this group')) {
+                        if (confirmError) {
+                            confirmError.style.display = 'block';
+                            const errorMsg = document.getElementById('group-confirmation-error-message');
+                            if (errorMsg) {
+                                errorMsg.textContent = 'You are already in this group!';
+                            }
+                        }
+
+                        // Vibrate for error
+                        if (navigator.vibrate) {
+                            navigator.vibrate([200, 100, 200]);
+                        }
+                        return;
+                    }
+
+                    // Other errors
+                    if (confirmError) {
+                        confirmError.style.display = 'block';
+                        const errorMsg = document.getElementById('group-confirmation-error-message');
+                        if (errorMsg) {
+                            errorMsg.textContent = data.message || 'Failed to join group';
+                        }
+                    }
+                    return;
+                }
+
+                // Success - update modal content and redirect
+                if (confirmContent) {
+                    confirmContent.innerHTML = `
+                        <div class="text-center">
+                            <div class="display-1 text-success mb-3">
+                                <i class="feather icon-check-circle"></i>
+                            </div>
+                            <h3 class="mb-3">Successfully Joined!</h3>
+                            <div class="alert alert-info">
+                                <strong>Slot ID:</strong> ${slotId}<br>
+                                <strong>Group:</strong> ${groupName}
+                            </div>
+                            <a href="${data.redirect_url}" class="btn btn-primary mt-3">
+                                <i class="feather icon-log-in me-2"></i>Enter Room
+                            </a>
+                        </div>
+                    `;
+                    confirmContent.style.display = 'block';
+                }
+
+                // Vibrate for success
+                if (navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+            })
+            .catch(error => {
+                // Reset joining flag
+                isJoiningGroup = false;
+
+                console.error('Error joining group:', error);
+
+                if (confirmError) {
+                    confirmError.style.display = 'block';
+                    const errorMsg = document.getElementById('group-confirmation-error-message');
+                    if (errorMsg) {
+                        errorMsg.textContent = 'An unexpected error occurred. Please try again.';
+                    }
+                }
+            });
+        }, 500); // 500ms delay to prevent rapid scanning
+    }
+
+    function onScanFailure(error) {
+        // Silent failure - don't show errors for normal scan failures
+    }
+
+
+
+
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    function confirmAndJoinGroup(slotId, groupName) {
+    // Prepare form data for the request
+    const formData = new FormData();
+    formData.append('slot_id', slotId);
+    formData.append('group_name', groupName);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    // Get modal elements
+    const confirmLoading = document.getElementById('group-confirmation-loading');
+    const confirmContent = document.getElementById('group-confirmation-content');
+    const confirmError = document.getElementById('group-confirmation-error');
+
+    // Show the modal
+    const groupConfirmationModal = new bootstrap.Modal(document.getElementById('groupConfirmationModal'));
+    groupConfirmationModal.show();
+
+    // Reset modal state
+    if (confirmLoading) confirmLoading.style.display = 'block';
+    if (confirmContent) confirmContent.style.display = 'none';
+    if (confirmError) confirmError.style.display = 'none';
+
+    // Send AJAX request to get group details and check eligibility
+    fetch('/join-group-from-qr/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide loading state
+        if (confirmLoading) confirmLoading.style.display = 'none';
+
+        if (data.status === 'error') {
+            // Handle specific errors
+            if (confirmError) {
+                confirmError.style.display = 'block';
+                const errorMsg = document.getElementById('group-confirmation-error-message');
+                if (errorMsg) {
+                    errorMsg.textContent = data.message;
+                }
+            }
+
+            // Vibrate for error
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+            return;
+        }
+
+        // Show content with group details for confirmation
+        if (confirmContent) {
+            confirmContent.style.display = 'block';
+
+            // Update modal with group details
+            const groupNameEl = document.getElementById('group-name');
+            const quickSlotIdEl = document.getElementById('quick-slot-id');
+            const eventNameEl = document.getElementById('event-name');
+            const levelNameEl = document.getElementById('level-name');
+            const slotDateEl = document.getElementById('slot-date');
+            const slotTimeEl = document.getElementById('slot-time');
+
+            if (groupNameEl) groupNameEl.textContent = data.group.name;
+            if (quickSlotIdEl) quickSlotIdEl.textContent = `Slot ID: ${slotId}`;
+            if (eventNameEl) eventNameEl.textContent = data.slot.event_name;
+            if (levelNameEl) levelNameEl.textContent = `Level ${data.slot.level_number} - ${data.slot.level_name}`;
+            if (slotDateEl) slotDateEl.textContent = data.slot.date;
+            if (slotTimeEl) slotTimeEl.textContent = data.slot.time;
+
+            // Setup join button
+            const joinButton = document.getElementById('join-button');
+            const groupIdInput = document.getElementById('group-id-input');
+            const slotIdInput = document.getElementById('slot-id-input');
+            const groupNameInput = document.getElementById('group-name-input');
+            const joinGroupForm = document.getElementById('join-group-form');
+
+            if (joinButton) {
+                joinButton.innerHTML = `<i class="feather icon-log-in me-1"></i> Join Group ${data.group.name}`;
+                joinButton.disabled = false;
+            }
+
+            if (groupIdInput) groupIdInput.value = data.group.id;
+            if (slotIdInput) slotIdInput.value = slotId;
+            if (groupNameInput) groupNameInput.value = groupName;
+
+            if (joinGroupForm) {
+                joinGroupForm.onsubmit = function(e) {
+                    e.preventDefault();
+
+                    // Disable join button and show loading
+                    if (joinButton) {
+                        joinButton.disabled = true;
+                        joinButton.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Joining...`;
+                    }
+
+                    // Send final join request
+                    fetch('/join-group-from-qr/', {
+                        method: 'POST',
+                        body: new FormData(joinGroupForm),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(joinData => {
+                        if (joinData.status === 'success') {
+                            // Show success message
+                            confirmContent.innerHTML = `
+                                <div class="text-center">
+                                    <div class="display-1 text-success mb-3">
+                                        <i class="feather icon-check-circle"></i>
+                                    </div>
+                                    <h3 class="mb-3">Successfully Joined!</h3>
+                                    <div class="alert alert-info">
+                                        <strong>Slot ID:</strong> ${slotId}<br>
+                                        <strong>Group:</strong> ${data.group.name}
+                                    </div>
+                                    <a href="${joinData.redirect_url}" class="btn btn-primary mt-3">
+                                        <i class="feather icon-log-in me-2"></i>Enter Room
+                                    </a>
+                                </div>
+                            `;
+
+                            // Vibrate for success
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100]);
+                            }
+                        } else {
+                            // Show error
+                            confirmError.style.display = 'block';
+                            const errorMsg = document.getElementById('group-confirmation-error-message');
+                            if (errorMsg) {
+                                errorMsg.textContent = joinData.message;
+                            }
+
+                            // Re-enable join button
+                            if (joinButton) {
+                                joinButton.disabled = false;
+                                joinButton.innerHTML = `<i class="feather icon-log-in me-1"></i> Join Group ${data.group.name}`;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error joining group:', error);
+                        confirmError.style.display = 'block';
+                        const errorMsg = document.getElementById('group-confirmation-error-message');
+                        if (errorMsg) {
+                            errorMsg.textContent = 'An unexpected error occurred. Please try again.';
+                        }
+
+                        // Re-enable join button
+                        if (joinButton) {
+                            joinButton.disabled = false;
+                            joinButton.innerHTML = `<i class="feather icon-log-in me-1"></i> Join Group ${data.group.name}`;
+                        }
+                    });
+                };
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error checking group details:', error);
+        if (confirmLoading) confirmLoading.style.display = 'none';
+        if (confirmError) {
+            confirmError.style.display = 'block';
+            const errorMsg = document.getElementById('group-confirmation-error-message');
+            if (errorMsg) {
+                errorMsg.textContent = 'An error occurred while checking group details. Please try again.';
+            }
+        }
+    });
+}
+
+    // Create confirmation modal if it doesn't exist
+    function createConfirmModal() {
+        const modal = document.createElement('div');
+        modal.id = 'groupConfirmModal';
+        modal.className = 'modal fade';
+        modal.tabIndex = '-1';
+        modal.setAttribute('aria-hidden', 'true');
+
+        // Get CSRF token for the form
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        modal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white py-3">
+                        <h5 class="modal-title" id="groupConfirmModalLabel">Join Group Confirmation</h5>
+                        <button type="button" class="btn-close bg-light" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div id="group-confirmation-loading" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3">Loading group details...</p>
+                        </div>
+
+                        <div id="group-confirmation-error" class="alert alert-danger" style="display: none;">
+                            <i class="feather icon-alert-circle me-2"></i>
+                            <span id="group-confirmation-error-message"></span>
+                        </div>
+
+                        <div id="group-confirmation-content" style="display: none;">
+                            <div class="text-center mb-4">
+                                <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle p-3 mb-3">
+                                    <i class="feather icon-users text-primary" style="font-size: 32px;"></i>
+                                </div>
+                                <h4 class="mb-0" id="group-name">Group Name</h4>
+                                <p class="text-muted" id="quick-slot-id">Slot ID</p>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <div class="bg-light rounded p-3 h-100">
+                                        <h6 class="mb-2">
+                                            <i class="feather icon-award text-primary me-2"></i>Event & Level
+                                        </h6>
+                                        <p class="mb-1 fw-bold" id="event-name">Event Name</p>
+                                        <p class="mb-0" id="level-name">Level </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="bg-light rounded p-3 h-100">
+                                        <h6 class="mb-2">
+                                            <i class="feather icon-calendar text-primary me-2"></i>Date & Time
+                                        </h6>
+                                        <p class="mb-1 fw-bold" id="slot-date">Date</p>
+                                        <p class="mb-0" id="slot-time">Time</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form id="join-group-form" method="post" action="">
+                                <input type="hidden" name="csrfmiddlewaretoken" value="${csrfToken}">
+                                <input type="hidden" id="group-id-input" name="group_id" value="">
+                                <input type="hidden" id="slot-id-input" name="slot_id" value="">
+                                <input type="hidden" id="group-name-input" name="group_name" value="">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" id="join-button" class="btn btn-primary">
+                                        <i class="feather icon-log-in me-1"></i> Join Group
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        return modal;
+    }
+});
+</script>
+{% endblock %}

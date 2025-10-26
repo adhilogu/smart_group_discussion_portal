@@ -1,0 +1,306 @@
+{% load i18n static admin_datta %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_direction as direction %}
+{% get_admin_setting as admin_setting %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Results - {{ slot.slot_id }}</title>
+
+    {% include "includes/head.html" %}
+    {% block extrastyle %}{% endblock extrastyle %}
+    {% block extrahead %}{% endblock extrahead %}
+
+    <!-- Required CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        .bg-copper {
+            background-color: #cd7f32 !important;
+        }
+        .text-copper {
+            color: #cd7f32 !important;
+        }
+        .rank-badge {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+        .certificate {
+            border: 8px solid #f8f9fa;
+            padding: 1.5rem;
+            background-color: white;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23f0f0f0' fill-opacity='0.4' fill-rule='evenodd'/%3E%3C/svg%3E");
+            position: relative;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printSection, #printSection * {
+                visibility: visible;
+            }
+            #printSection {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .detail-item i {
+            width: 24px;
+            margin-right: 0.75rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container py-4" id="printSection">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Session Information Card -->
+                <div class="text-center mb-5">
+                    <div class="position-relative d-inline-block">
+                        <!-- Decorative elements -->
+                        <div class="position-absolute" style="top: -20px; left: -40px; transform: rotate(-15deg); opacity: 0.7;">
+                            <i class="bi bi-stars text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                        <div class="position-absolute" style="top: -10px; right: -50px; transform: rotate(25deg); opacity: 0.7;">
+                            <i class="bi bi-trophy-fill text-warning" style="font-size: 2.2rem;"></i>
+                        </div>
+
+                        <!-- Main heading with gradient and shadow -->
+                        <h1 class="display-4 fw-bold" style="background: linear-gradient(45deg, #4e73df, #2c9faf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0px 2px 5px rgba(0,0,0,0.1); letter-spacing: 1px;">
+                            Results
+                        </h1>
+                        <!-- Decorative underline -->
+                        <div class="mt-2 mx-auto" style="width: 120px; height: 5px; background: linear-gradient(to right, #4e73df, #2c9faf); border-radius: 10px;"></div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="feather icon-info me-2"></i>Session Information</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <i class="feather icon-calendar"></i>
+                                    <div>
+                                        <div class="text-muted small">Date</div>
+                                        <div class="fw-bold">{{ slot_group.date|date:"F d, Y" }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="detail-item">
+                                    <i class="feather icon-clock"></i>
+                                    <div>
+                                        <div class="text-muted small">Time</div>
+                                        <div class="fw-bold">{{ slot_group.start_time|time:"g:i A" }} - {{ slot_group.end_time|time:"g:i A" }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="detail-item">
+                                    <i class="feather icon-hash"></i>
+                                    <div>
+                                        <div class="text-muted small">Slot ID</div>
+                                        <div class="fw-bold">{{ slot.slot_id }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <i class="feather icon-users"></i>
+                                    <div>
+                                        <div class="text-muted small">Group</div>
+                                        <div class="fw-bold">{{ participant.group_name }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="detail-item">
+                                    <i class="feather icon-layers"></i>
+                                    <div>
+                                        <div class="text-muted small">Level</div>
+                                        <div class="fw-bold">Level {{ slot_group.level.level }}: {{ slot_group.level.name }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="detail-item">
+                                    <i class="feather icon-file-text"></i>
+                                    <div>
+                                        <div class="text-muted small">Topic</div>
+                                        <div class="fw-bold text-truncate" style="max-width: 250px;" title="{{ assigned_topic }}">{{ assigned_topic }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Your Results Card -->
+                <!-- Combined Results Card -->
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="feather icon-award me-2"></i>Session Results</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Certificate Section -->
+                        <div class="certificate mb-4">
+                            <div class="text-center mb-3">
+                                <h3 class="fw-bold mb-1">{{ user_profile.name }}</h3>
+                                <div class="text-muted">{% if user_profile.roll_number %}{{user_profile.roll_number}}{% else %}{{user_profile.staff_id}}{% endif %}</div>
+                            </div>
+
+                            <div class="text-center">
+                                {% if user_rank and user_rank <= voting_parameters.max_ranks %}
+                                    {% if user_rank == 1 %}
+                                    <div class="bg-warning text-white rounded-pill py-2 px-4 d-inline-block mx-auto mb-3">
+                                        <i class="bi bi-trophy-fill me-2"></i>First Place
+                                    </div>
+                                    <h4 class="mb-1">Congratulations!</h4>
+                                    <p class="mb-0">You secured <span class="fw-bold text-warning">1st Place</span> with <span class="fw-bold">{{ user_mark }}</span> points</p>
+                                    {% elif user_rank == 2 %}
+                                    <div class="bg-secondary text-white rounded-pill py-2 px-4 d-inline-block mx-auto mb-3">
+                                        <i class="bi bi-trophy me-2"></i>Second Place
+                                    </div>
+                                    <h4 class="mb-1">Congratulations!</h4>
+                                    <p class="mb-0">You secured <span class="fw-bold text-secondary">2nd Place</span> with <span class="fw-bold">{{ user_mark }}</span> points</p>
+                                    {% elif user_rank == 3 %}
+                                    <div class="bg-copper text-white rounded-pill py-2 px-4 d-inline-block mx-auto mb-3">
+                                        <i class="bi bi-trophy me-2"></i>Third Place
+                                    </div>
+                                    <h4 class="mb-1">Congratulations!</h4>
+                                    <p class="mb-0">You secured <span class="fw-bold text-copper">3rd Place</span> with <span class="fw-bold">{{ user_mark }}</span> points</p>
+                                    {% else %}
+                                    <div class="bg-primary text-white rounded-pill py-2 px-4 d-inline-block mx-auto mb-3">
+                                        <i class="bi bi-award me-2"></i>{{ user_rank }}th Place
+                                    </div>
+                                    <h4 class="mb-1">Well Done!</h4>
+                                    <p class="mb-0">You secured <span class="fw-bold text-primary">{{ user_rank }}th Place</span> with <span class="fw-bold">{{ user_mark }}</span> points</p>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="bg-danger text-white rounded-pill py-2 px-4 d-inline-block mx-auto mb-3">
+                                        <i class="bi bi-hand-thumbs-up me-2"></i>Participation
+                                    </div>
+                                    <h4 class="mb-1">Better Luck Next Time!</h4>
+                                    <p class="mb-0">You earned <span class="fw-bold">{{ user_mark }}</span> points</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Divider -->
+                        <hr class="my-4">
+
+                        <!-- Group Rankings Section -->
+                        <h5 class="mb-3"><i class="feather icon-list me-2"></i>Group Rankings</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center" style="width: 80px">Rank</th>
+                                        <th>Name</th>
+                                        <th>ID</th>
+                                        <th class="text-end" style="width: 100px">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in ranked_members %}
+                                    {% if forloop.counter <= voting_parameters.max_ranks %}
+                                    <tr {% if member.id == participant.id %}class="table-primary"{% endif %}>
+                                        <td class="text-center">
+                                            <div class="d-flex align-items-center justify-content-center">
+                                                {% if forloop.counter == 1 %}
+                                                <div class="rank-badge bg-warning text-white">
+                                                    <i class="bi bi-trophy-fill"></i>
+                                                </div>
+                                                {% elif forloop.counter == 2 %}
+                                                <div class="rank-badge bg-secondary text-white">
+                                                    <i class="bi bi-trophy"></i>
+                                                </div>
+                                                {% elif forloop.counter == 3 %}
+                                                <div class="rank-badge bg-copper text-white">
+                                                    <i class="bi bi-trophy"></i>
+                                                </div>
+                                                {% else %}
+                                                <div class="rank-badge bg-light">
+                                                    {{ forloop.counter }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if member.user.photo %}
+                                                <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                {% else %}
+                                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                    <i class="feather icon-user text-secondary"></i>
+                                                </div>
+                                                {% endif %}
+                                                <div class="fw-bold">{{ member.user.name }}{% if member.id == participant.id %} <span class="badge bg-primary">You</span>{% endif %}</div>
+                                            </div>
+                                        </td>
+                                        <td class="align-middle">
+                                            {% if member.user.roll_number %}
+                                                {{ member.user.roll_number }}
+                                            {% else %}
+                                                {{ member.user.staff_id }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            {{ member.mark }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="d-flex justify-content-center gap-3 mb-4 no-print">
+                    <button id="printResultsBtn" class="btn btn-outline-primary btn-lg">
+                        <i class="feather icon-printer me-2"></i>Print
+                    </button>
+                    <a href="{% url 'my_slots_page' %}" class="btn btn-primary btn-lg">
+                        <i class="feather icon-external-link me-2"></i>Go to My Slots
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for print functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Print Functionality
+            document.getElementById('printResultsBtn').addEventListener('click', function() {
+                window.print();
+            });
+        });
+    </script>
+</body>
+</html>

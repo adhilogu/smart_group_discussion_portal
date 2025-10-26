@@ -1,0 +1,785 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Voting Simulator{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+    <div class="pc-content">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="feather icon-award me-2"></i>Voting Simulator</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Setup Section -->
+                        <div id="setupSection">
+                            <div class="alert alert-info mb-4">
+                                <p class="mb-0">Configure your group size to simulate the peer voting system with advanced bias detection.</p>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="totalMembers" class="form-label">Total Group Members:</label>
+                                        <input type="number" id="totalMembers" class="form-control" min="6" max="30" value="8">
+                                        <small class="form-text text-muted">Min: 6 members</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                               <button class="btn btn-primary" onclick="setupVoting()">Continue</button>
+                            </div>
+                        </div>
+
+                        <!-- Voting Section -->
+                        <div id="votingSection" style="display: none;">
+                            <h5 class="mb-3 border-bottom pb-2"><i class="feather icon-users me-2"></i>Members & Voting</h5>
+
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="votingMatrix">
+                                            <thead>
+                                                <tr>
+                                                    <th>Voter / Recipient</th>
+                                                    <!-- Member columns will be added dynamically -->
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Voting rows will be added dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 d-flex justify-content-between">
+                                <div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="absentSwitch" onchange="toggleAbsentMembers()">
+                                        <label class="form-check-label" for="absentSwitch">Mark selected as absent</label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <button class="btn btn-info btn-sm" onclick="randomizeVotes()">
+                                        <i class="feather icon-shuffle me-1"></i>Randomize
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button class="btn btn-secondary me-2" onclick="goBack('voting')">
+                                    <i class="feather icon-arrow-left me-1"></i>Back
+                                </button>
+                                <button class="btn btn-primary" onclick="calculateResults()">
+                                    <i class="feather icon-bar-chart-2 me-1"></i>Calculate Results
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Results Section -->
+                        <div id="resultsSection" style="display: none;">
+                            <!-- Voting Parameters Summary -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header bg-info text-white">
+                                            <h6 class="mb-0"><i class="feather icon-settings me-2"></i>Voting Parameters</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <p class="mb-1"><strong>Total Members:</strong> <span id="totalMembersDisplay">8</span></p>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <p class="mb-1"><strong>Max Ranks:</strong> <span id="maxRanksDisplay">2</span></p>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <p class="mb-1"><strong>Bias Penalty:</strong> <span id="biasPenaltyDisplay">0.5</span></p>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <p class="mb-1"><strong>Absence Penalty:</strong> <span id="absencePenaltyDisplay">-2.25</span></p>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-2">
+                                                <div class="col-12">
+                                                    <p class="mb-0"><strong>Rank Scores:</strong> <span id="rankScoresDisplay">{1: 2, 2: 1}</span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="mb-3 border-bottom pb-2"><i class="feather icon-bar-chart-2 me-2"></i>Voting Results</h5>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" id="resultsTable">
+                                            <thead class="table-primary">
+                                                <tr>
+                                                    <th>Rank</th>
+                                                    <th>Member</th>
+                                                    <th>Raw Score</th>
+                                                    <th>Penalties</th>
+                                                    <th>Final Score</th>
+                                                    <th>Reason</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="resultsTableBody">
+                                                <!-- Results will be added dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bias Detection Details -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h6 class="mb-0"><i class="feather icon-alert-triangle me-2"></i>Bias Detection Details</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="alert alert-info mb-3">
+                                                <p class="small mb-0">
+                                                    <strong>Bias Detection Algorithm:</strong> Votes are considered biased when a voter gives a rank that doesn't
+                                                    match what the majority of voters gave. Majority is determined by the most frequently assigned ranks.
+                                                </p>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-sm" id="biasTable">
+                                                    <thead class="table-warning">
+                                                        <tr>
+                                                            <th>Voter</th>
+                                                            <th>Recipient</th>
+                                                            <th>Given Rank</th>
+                                                            <th>Expected Ranks</th>
+                                                            <th>Majority Ranks</th>
+                                                            <th>Majority Scores</th>
+                                                            <th>Bias Detected</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="biasTableBody">
+                                                        <!-- Bias details will be added dynamically -->
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-4">
+                                <button class="btn btn-secondary me-2" onclick="goBack('results')">
+                                    <i class="feather icon-arrow-left me-1"></i>Back
+                                </button>
+                                <button class="btn btn-success me-2" onclick="downloadPDF()">
+                                    <i class="feather icon-download me-1"></i>Download Results PDF
+                                </button>
+                                <button class="btn btn-primary" onclick="resetSimulator()">
+                                    <i class="feather icon-refresh-cw me-1"></i>Start Over
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .vote-cell { transition: background-color 0.2s; }
+    .vote-cell:hover { background-color: #f8f9fa; }
+    .vote-cell.selected { background-color: #e3f2fd; }
+    .vote-cell.disabled { background-color: #f5f5f5; }
+    .bias-penalty { color: #ff9800; font-weight: bold; }
+    .absence-penalty { color: #dc3545; font-weight: bold; }
+    .biased-row { background-color: rgba(255, 152, 0, 0.1); }
+    .absent-row { background-color: rgba(108, 117, 125, 0.1); }
+    .vote-select { width: 100%; }
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #resultsSection, #resultsSection * {
+            visibility: visible;
+        }
+        #resultsSection {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+
+<script>
+// Global variables
+let members = [];
+let maxRanks = 2;
+let rankScores = { 1: 2, 2: 1 };
+let absentMembers = new Set();
+let biasedVotes = [];
+let votingParameters = {};
+
+// Utility Functions
+function determineMaxRanks(groupSize) {
+    if (6 <= groupSize && groupSize <= 11) return 2;
+    if (12 <= groupSize && groupSize <= 17) return 3;
+    if (18 <= groupSize && groupSize <= 29) return 4;
+    if (groupSize >= 30) return 5;
+    return 2; // Default
+}
+
+function calculateRankScores(maxRanks) {
+    const scores = {};
+    for (let rank = 1; rank <= maxRanks; rank++) {
+        scores[rank] = maxRanks - rank + 1;
+    }
+    return scores;
+}
+
+function updateParameters() {
+    const groupSize = parseInt(document.getElementById('totalMembers').value) || 8;
+    if (groupSize < 6) document.getElementById('totalMembers').value = 6;
+
+    maxRanks = determineMaxRanks(groupSize);
+    rankScores = calculateRankScores(maxRanks);
+}
+
+// Setup Functions
+function setupVoting() {
+    updateParameters();
+    const totalMembers = parseInt(document.getElementById('totalMembers').value);
+
+    // Create members array
+    members = Array.from({ length: totalMembers }, (_, i) => ({
+        id: i + 1,
+        name: `Member ${i + 1}`
+    }));
+
+    // Generate voting matrix
+    generateVotingMatrix();
+
+    // Switch to voting section
+    document.getElementById('setupSection').style.display = 'none';
+    document.getElementById('votingSection').style.display = 'block';
+}
+
+function generateVotingMatrix() {
+    const table = document.getElementById('votingMatrix');
+    const thead = table.querySelector('thead tr');
+    const tbody = table.querySelector('tbody');
+
+    // Clear existing content
+    while (thead.children.length > 1) thead.removeChild(thead.lastChild);
+    tbody.innerHTML = '';
+
+    // Add column headers (recipients)
+    members.forEach(member => {
+        const th = document.createElement('th');
+        th.innerHTML = `<div class="form-check d-flex justify-content-center">
+            <input class="form-check-input me-1" type="checkbox" id="check-${member.id}"
+                onchange="toggleMemberColumn(${member.id})">
+            <label>${member.name}</label>
+        </div>`;
+        thead.appendChild(th);
+    });
+
+    // Add rows (voters)
+    members.forEach(voter => {
+        const tr = document.createElement('tr');
+
+        // Add voter name
+        const tdName = document.createElement('td');
+        tdName.innerHTML = `<strong>${voter.name}</strong>`;
+        tr.appendChild(tdName);
+
+        // Add cells for each recipient
+        members.forEach(recipient => {
+            const td = document.createElement('td');
+
+            // Can't vote for self
+            if (voter.id === recipient.id) {
+                td.className = 'vote-cell disabled text-center';
+                td.innerHTML = '—';
+            } else {
+                td.className = 'vote-cell text-center';
+                td.dataset.voter = voter.id;
+                td.dataset.recipient = recipient.id;
+
+                // Create dropdown for ranks
+                const select = document.createElement('select');
+                select.className = 'form-select form-select-sm vote-select';
+                select.dataset.voter = voter.id;
+                select.dataset.recipient = recipient.id;
+
+                // Add options
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '0';
+                defaultOption.textContent = '-- Select --';
+                select.appendChild(defaultOption);
+
+                for (let i = 1; i <= maxRanks; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `Rank ${i}`;
+                    select.appendChild(option);
+                }
+
+                // Add onchange event
+                select.onchange = function() { selectRank(this); };
+
+                td.appendChild(select);
+            }
+
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+}
+
+// Voting Functions
+function selectRank(select) {
+    const voterId = parseInt(select.dataset.voter);
+    const recipientId = parseInt(select.dataset.recipient);
+    const newRank = parseInt(select.value);
+
+    // Clear any existing same rank for this voter
+    if (newRank > 0) {
+        document.querySelectorAll(`select[data-voter="${voterId}"]`).forEach(otherSelect => {
+            if (otherSelect !== select && otherSelect.value === newRank.toString()) {
+                otherSelect.value = '0';
+                otherSelect.parentElement.classList.remove('selected');
+            }
+        });
+    }
+
+    // Update the cell styling
+    if (newRank > 0) {
+        select.parentElement.classList.add('selected');
+    } else {
+        select.parentElement.classList.remove('selected');
+    }
+}
+
+function toggleMemberColumn(memberId) {
+    const isChecked = document.getElementById(`check-${memberId}`).checked;
+
+    if (isChecked) {
+        absentMembers.add(memberId);
+    } else {
+        absentMembers.delete(memberId);
+    }
+
+    // Update voting cells
+    document.querySelectorAll(`.vote-cell[data-voter="${memberId}"], .vote-cell[data-recipient="${memberId}"]`).forEach(cell => {
+        const selects = cell.querySelectorAll('select');
+
+        if (isChecked) {
+            cell.classList.add('disabled');
+            selects.forEach(select => {
+                select.disabled = true;
+                select.value = '0';
+            });
+        } else {
+            // Only enable if neither voter nor recipient is absent
+            const voterId = parseInt(cell.dataset.voter);
+            const recipientId = parseInt(cell.dataset.recipient);
+
+            if (voterId !== recipientId && !absentMembers.has(voterId) && !absentMembers.has(recipientId)) {
+                cell.classList.remove('disabled');
+                selects.forEach(select => {
+                    select.disabled = false;
+                });
+            }
+        }
+    });
+}
+
+function toggleAbsentMembers() {
+    document.querySelectorAll('input[id^="check-"]').forEach(checkbox => {
+        if (checkbox.checked) {
+            const memberId = parseInt(checkbox.id.replace('check-', ''));
+            toggleMemberColumn(memberId);
+        }
+    });
+}
+
+function randomizeVotes() {
+    // Clear all votes first
+    document.querySelectorAll('.vote-cell select').forEach(select => {
+        if (!select.disabled) {
+            select.value = '0';
+            select.parentElement.classList.remove('selected');
+        }
+    });
+
+    // For each active member, assign random ranks
+    const activeMembers = members.filter(m => !absentMembers.has(m.id));
+
+    activeMembers.forEach(voter => {
+        // Get eligible recipients (everyone except self and absent)
+        const eligibleRecipients = activeMembers.filter(r => r.id !== voter.id);
+
+        // Shuffle recipients
+        const shuffled = [...eligibleRecipients].sort(() => 0.5 - Math.random());
+
+        // Assign ranks
+        for (let rank = 1; rank <= Math.min(maxRanks, shuffled.length); rank++) {
+            const select = document.querySelector(`select[data-voter="${voter.id}"][data-recipient="${shuffled[rank-1].id}"]`);
+            if (select) {
+                select.value = rank;
+                select.parentElement.classList.add('selected');
+            }
+        }
+    });
+}
+
+// Calculation Functions
+function calculateResults() {
+    // Reset biased votes array
+    biasedVotes = [];
+
+    // Collect votes
+    const votes = {};
+
+    // Initialize votes for each member
+    members.forEach(member => {
+        votes[member.id] = {
+            given: {},
+            received: {}
+        };
+    });
+
+    // Collect votes from the voting matrix
+    document.querySelectorAll('.vote-cell select').forEach(select => {
+        const voterId = parseInt(select.dataset.voter);
+        const recipientId = parseInt(select.dataset.recipient);
+        const rank = parseInt(select.value);
+
+        if (!isNaN(voterId) && !isNaN(recipientId) && !isNaN(rank) && rank > 0) {
+            votes[voterId].given[recipientId] = rank;
+            votes[recipientId].received[voterId] = rank;
+        }
+    });
+
+    // Check for members who haven't voted and mark them as absent
+    const activeMembers = members.filter(m => !absentMembers.has(m.id));
+
+    activeMembers.forEach(member => {
+        const givenVotes = Object.keys(votes[member.id].given).length;
+        if (givenVotes !== maxRanks) {
+            console.log(`Member ${member.id} (${member.name}) hasn't voted fully, marking as absent`);
+            absentMembers.add(member.id);
+        }
+    });
+
+    // Recalculate active members after potentially marking some as absent
+    const updatedActiveMembers = members.filter(m => !absentMembers.has(m.id));
+
+    // Calculate raw scores for each member
+    const rawScores = {};
+
+    members.forEach(member => {
+        rawScores[member.id] = 0;
+
+        Object.entries(votes[member.id].received).forEach(([voterId, rank]) => {
+            rawScores[member.id] += rankScores[rank] || 0;
+        });
+    });
+
+    // Calculate average score for penalty calculation - average is (total score / number of ranks)
+    const totalRankScoreSum = Object.values(rankScores).reduce((sum, score) => sum + score, 0);
+    const averageRankScore = totalRankScoreSum / Object.keys(rankScores).length;
+
+    // Bias penalty = average rank score - 1
+    const biasPenalty = averageRankScore - 1;
+
+    // Absence penalty = -(average rank score)²
+    const absencePenalty = -Math.pow(averageRankScore, 2);
+
+    // Store voting parameters for display and download
+    votingParameters = {
+        totalMembers: members.length,
+        maxRanks: maxRanks,
+        rankScores: rankScores,
+        biasPenalty: biasPenalty,
+        absencePenalty: absencePenalty
+    };
+
+    // Update the voting parameters display
+    displayVotingParameters();
+
+    // Detect bias using the updated algorithm
+    const biasDetections = detectBiasedVotes(votes, updatedActiveMembers);
+
+    // Calculate final scores
+    const finalScores = {};
+    members.forEach(member => {
+        if (absentMembers.has(member.id)) {
+            finalScores[member.id] = absencePenalty;
+        } else {
+            const memberBiasPenalty = biasDetections[member.id] ? -biasPenalty : 0; // Apply negative bias penalty
+            finalScores[member.id] = rawScores[member.id] + memberBiasPenalty; // This will subtract the penalty
+        }
+    });
+
+    // Display results
+    displayResults(rawScores, biasDetections, finalScores, absencePenalty, biasPenalty);
+
+    // Switch to results section
+    document.getElementById('votingSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+}
+
+// Display voting parameters in the results section
+function displayVotingParameters() {
+    document.getElementById('totalMembersDisplay').textContent = votingParameters.totalMembers;
+    document.getElementById('maxRanksDisplay').textContent = votingParameters.maxRanks;
+    document.getElementById('biasPenaltyDisplay').textContent = votingParameters.biasPenalty.toFixed(2);
+    document.getElementById('absencePenaltyDisplay').textContent = votingParameters.absencePenalty.toFixed(2);
+
+    // Display rank scores in a readable format
+    const rankScoresText = Object.entries(votingParameters.rankScores)
+        .map(([rank, score]) => `Rank ${rank}: ${score} pts`)
+        .join(', ');
+    document.getElementById('rankScoresDisplay').textContent = rankScoresText;
+}
+
+// Updated bias detection function
+function detectBiasedVotes(votes, activeMembers) {
+    const biasDetections = {};
+
+    // For each active member (recipient)
+    activeMembers.forEach(recipient => {
+        // Get all ranks given to this recipient
+        const receivedRanks = [];
+
+        activeMembers.forEach(voter => {
+            if (voter.id !== recipient.id && votes[voter.id]?.given[recipient.id]) {
+                receivedRanks.push(votes[voter.id].given[recipient.id]);
+            }
+        });
+
+        if (receivedRanks.length === 0) return;
+
+        // Count frequency of each rank (not score)
+        const rankCounts = {};
+        receivedRanks.forEach(rank => {
+            rankCounts[rank] = (rankCounts[rank] || 0) + 1;
+        });
+
+        // Get unique frequencies
+        const frequencies = Object.values(rankCounts);
+
+        // Check if all ranks have equal frequency
+        const allEqual = frequencies.every(f => f === frequencies[0]);
+
+        let majorityRanks = new Set();
+
+        if (allEqual) {
+            // If all ranks are equally frequent, use standard deviation
+            const rankValues = receivedRanks.map(Number);
+            const mean = rankValues.reduce((sum, val) => sum + val, 0) / rankValues.length;
+            const sumSquaredDiffs = rankValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0);
+            const stdDev = Math.sqrt(sumSquaredDiffs / rankValues.length);
+
+            const lowerBound = mean - stdDev;
+            const upperBound = mean + stdDev;
+
+            rankValues.forEach(rank => {
+                if (lowerBound <= rank && rank <= upperBound) {
+                    majorityRanks.add(rank);
+                }
+            });
+        } else {
+            // Use frequency-based majority selection
+            const maxFrequency = Math.max(...frequencies);
+
+            Object.entries(rankCounts).forEach(([rank, count]) => {
+                if (count === maxFrequency) {
+                    majorityRanks.add(parseInt(rank));
+                }
+            });
+        }
+
+        // For each voter who gave a rank to this recipient
+        activeMembers.forEach(voter => {
+            if (voter.id !== recipient.id && votes[voter.id]?.given[recipient.id]) {
+                const givenRank = votes[voter.id].given[recipient.id];
+
+                // If the given rank is not in the majority set, it's biased
+                const isBiased = !majorityRanks.has(givenRank);
+
+                if (isBiased) {
+                    // Mark voter as biased
+                    biasDetections[voter.id] = true;
+
+                    // Get scores for the majority ranks
+                    const majorityScores = Array.from(majorityRanks).map(rank => rankScores[rank]);
+
+                    // Record this biased vote for detailed display
+                    biasedVotes.push({
+                        voterId: voter.id,
+                        voterName: members.find(m => m.id === voter.id).name,
+                        recipientId: recipient.id,
+                        recipientName: members.find(m => m.id === recipient.id).name,
+                        givenRank: givenRank,
+                        givenScore: rankScores[givenRank],
+                        majorityRanks: Array.from(majorityRanks).sort((a, b) => a - b),
+                        majorityScores: majorityScores.sort((a, b) => b - a),
+                        rankCounts: rankCounts,
+                        expectedRanks: Array.from(majorityRanks).sort((a, b) => a - b)
+                    });
+                }
+            }
+        });
+    });
+
+    return biasDetections;
+}
+
+function displayResults(rawScores, biasDetections, finalScores, absencePenalty, biasPenalty) {
+    // Calculate final rankings
+    const rankings = Object.entries(finalScores)
+        .map(([id, score]) => ({
+            id: parseInt(id),
+            score,
+            raw: rawScores[id] || 0,
+            penalties: absentMembers.has(parseInt(id)) ?
+                absencePenalty :
+                (biasDetections[parseInt(id)] ? biasPenalty : 0),
+            reason: absentMembers.has(parseInt(id)) ?
+                'Member was absent' :
+                (biasDetections[parseInt(id)] ? 'Biased voting detected' : 'No penalties')
+        }))
+        .sort((a, b) => b.score - a.score);
+
+    // Populate results table
+    const tableBody = document.getElementById('resultsTableBody');
+    tableBody.innerHTML = '';
+
+    rankings.forEach((item, index) => {
+        const member = members.find(m => m.id === item.id);
+        const tr = document.createElement('tr');
+
+        // Add class for biased or absent members
+        if (absentMembers.has(item.id)) {
+            tr.className = 'absent-row';
+        } else if (biasDetections[item.id]) {
+            tr.className = 'biased-row';
+        }
+
+        // Calculate the penalty display value
+        let penaltyDisplay = '—';
+        if (item.penalties !== 0) {
+            penaltyDisplay = absentMembers.has(item.id)
+                ? `<span class="absence-penalty">${item.penalties.toFixed(2)}</span>`
+                : `<span class="bias-penalty">-${biasPenalty.toFixed(2)}</span>`;
+        }
+
+        tr.innerHTML = `
+            <td class="text-center">${index + 1}</td>
+            <td>${member.name}</td>
+            <td class="text-center">${item.raw.toFixed(2)}</td>
+            <td class="text-center">${penaltyDisplay}</td>
+            <td class="text-center fw-bold">${item.score.toFixed(2)}</td>
+            <td>${item.reason}</td>
+        `;
+
+        tableBody.appendChild(tr);
+    });
+
+    // Display bias details
+    displayBiasDetails();
+}
+
+function displayBiasDetails() {
+    // Populate bias details table
+    const biasTableBody = document.getElementById('biasTableBody');
+    biasTableBody.innerHTML = '';
+
+    if (biasedVotes.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="7" class="text-center">No biased votes detected</td>`;
+        biasTableBody.appendChild(tr);
+    } else {
+        // Now add the details for each biased vote
+        biasedVotes.forEach(vote => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${vote.voterName}</td>
+                <td>${vote.recipientName}</td>
+                <td class="text-center">${vote.givenRank} (${vote.givenScore} pts)</td>
+                <td class="text-center">${vote.expectedRanks.join(', ')}</td>
+                <td class="text-center">${vote.majorityRanks.join(', ')}</td>
+                <td class="text-center">[${vote.majorityScores.join(', ')}]</td>
+                <td class="text-center">
+                    <span class="badge bg-warning text-dark">Yes</span>
+                </td>
+            `;
+            biasTableBody.appendChild(tr);
+        });
+    }
+}
+
+// Navigation Functions
+function goBack(section) {
+    if (section === 'voting') {
+        document.getElementById('votingSection').style.display = 'none';
+        document.getElementById('setupSection').style.display = 'block';
+    } else if (section === 'results') {
+        document.getElementById('resultsSection').style.display = 'none';
+        document.getElementById('votingSection').style.display = 'block';
+    }
+}
+
+function resetSimulator() {
+    members = [];
+    absentMembers = new Set();
+    biasedVotes = [];
+    votingParameters = {};
+    document.getElementById('totalMembers').value = '8';
+    updateParameters();
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('votingSection').style.display = 'none';
+    document.getElementById('setupSection').style.display = 'block';
+}
+
+// PDF Download functionality
+function downloadPDF() {
+    // Print to PDF - this uses the browser's print functionality
+    // We'll add the class 'no-print' to elements we don't want to appear in the PDF
+
+    // Hide buttons for printing
+    const buttons = document.querySelectorAll('#resultsSection button');
+    buttons.forEach(button => button.classList.add('no-print'));
+
+    // Add a print-only title at the top
+    const printTitle = document.createElement('div');
+    printTitle.classList.add('print-only');
+    printTitle.innerHTML = `
+        <h2 class="text-center mb-4">Voting Simulator Results</h2>
+    `;
+    document.getElementById('resultsSection').prepend(printTitle);
+
+    // Print the page
+    window.print();
+
+    // Remove print-specific elements and classes after printing
+    printTitle.remove();
+    buttons.forEach(button => button.classList.remove('no-print'));
+}
+</script>
+{% endblock content %}

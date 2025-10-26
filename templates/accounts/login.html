@@ -1,0 +1,156 @@
+{% extends "layouts/base-auth.html" %}
+{% load static %}
+{% load socialaccount %}
+{% block title %}Login{% endblock title %}
+
+{% block content %}
+<style>
+    .password-wrapper {
+        position: relative;
+    }
+    .password-toggle {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+        z-index: 10;
+    }
+    .password-toggle:hover {
+        color: #007bff;
+    }
+
+    /* Added responsive styles */
+    .auth-main {
+        background-image: url('{% static 'newicons/bg-img.webp' %}');
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .auth-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+    }
+
+    .card {
+        width: 100%;
+        max-width: 450px;
+    }
+
+    .logo-img {
+        max-width: 100%;
+        height: auto;
+        width: auto;
+        max-height: 120px;
+    }
+
+    /* Responsive login buttons */
+    .login-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+
+    @media (min-width: 576px) {
+        .login-buttons {
+            flex-direction: row;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="auth-main">
+    <div class="auth-wrapper v1">
+        <div class="card mb-0">
+            <form method="post" class="card-body">
+                {% csrf_token %}
+
+                <div class="text-center">
+                    <a href="{% url "index" %}">
+                        <div>
+                            <img src="{% static 'newicons/bitlogo_dark.png' %}" alt="bit logo" class="logo-img">
+                        </div>
+                    </a>
+                </div>
+                <h4 class="text-center fw-bold fs-4">Login</h4>
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <span class="d-block text-danger mb-3">{{ error }}</span>
+                    {% endfor %}
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="form-group mb-3 {% if field.name == 'password' %}password-wrapper{% endif %}">
+                        {{ field }}
+                        {% if field.name == 'password' %}
+                            <span class="password-toggle" id="passwordToggle">
+                                <i data-feather="eye" id="passwordShowHide"></i>
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <div class="d-flex mt-1 justify-content-between align-items-center flex-wrap">
+                    <div class="form-check">
+                        <input class="form-check-input input-primary" type="checkbox" id="customCheckc1" checked="">
+                        <label class="form-check-label text-muted" for="customCheckc1">Remember me?</label>
+                    </div>
+                    <a href="{% url "password_reset" %}" class="text-secondary f-w-400 mb-0">Forgot Password?</a>
+                </div>
+
+                <div class="text-center mt-4">
+                    <div class="login-buttons">
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                        <a href="{% url 'google_login' %}" class="btn btn-outline-danger w-100">
+                            <i class="fab fa-google me-2"></i> Sign in with Google
+                        </a>
+                    </div>
+                </div>
+
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.querySelector('input[type="password"]');
+    const passwordToggle = document.getElementById('passwordToggle');
+    const passwordIcon = document.getElementById('passwordShowHide');
+
+    // Initial state: password is hidden (open eye)
+    let isPasswordVisible = false;
+
+    passwordToggle.addEventListener('click', function() {
+        if (isPasswordVisible) {
+            // Hide password
+            passwordInput.type = 'password';
+            passwordIcon.setAttribute('data-feather', 'eye-off');
+            isPasswordVisible = false;
+        } else {
+            // Show password
+            passwordInput.type = 'text';
+            passwordIcon.setAttribute('data-feather', 'eye');
+            isPasswordVisible = true;
+        }
+
+        // Refresh Feather icons
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    });
+});
+</script>
+{% endblock content %}

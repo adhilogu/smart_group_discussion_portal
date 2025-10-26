@@ -1,0 +1,3502 @@
+{% load i18n static admin_datta %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+{% get_direction as direction %}
+{% get_admin_setting as admin_setting %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %} Room Page {% endblock title %} </title>
+
+    {% include "includes/head.html" %}
+    {% block extrastyle %}{% endblock extrastyle %}
+    {% block extrahead %}{% endblock extrahead %}
+
+    <!-- Required CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+    <!-- Required JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+    <!-- Custom CSS -->
+<style>
+    /* UPDATED RANK BOX STYLES FOR MORE COLORFUL UI */
+.rank-box {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    min-height: 130px;
+    min-width: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    position: relative;
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Colorful rank styling */
+.rank-box[data-rank="1"] {
+    border-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.05);
+}
+
+.rank-box[data-rank="2"] {
+    border-color: #6c757d;
+    background-color: rgba(108, 117, 125, 0.05);
+}
+
+.rank-box[data-rank="3"] {
+    border-color: #cd7f32;
+    background-color: rgba(205, 127, 50, 0.05);
+}
+
+.rank-box[data-rank="4"] {
+    border-color: #20c997;
+    background-color: rgba(32, 201, 151, 0.05);
+}
+
+.rank-box[data-rank="5"] {
+    border-color: #0dcaf0;
+    background-color: rgba(13, 202, 240, 0.05);
+}
+
+/* Filled state styling */
+.rank-box.filled {
+    border-style: solid;
+    border-width: 3px;
+    transform: translateY(-3px);
+}
+
+.rank-box.filled[data-rank="1"] {
+    background-color: rgba(255, 193, 7, 0.1);
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.2);
+}
+
+.rank-box.filled[data-rank="2"] {
+    background-color: rgba(108, 117, 125, 0.1);
+    box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+}
+
+.rank-box.filled[data-rank="3"] {
+    background-color: rgba(205, 127, 50, 0.1);
+    box-shadow: 0 5px 15px rgba(205, 127, 50, 0.2);
+}
+
+.rank-box.filled[data-rank="4"] {
+    background-color: rgba(32, 201, 151, 0.1);
+    box-shadow: 0 5px 15px rgba(32, 201, 151, 0.2);
+}
+
+.rank-box.filled[data-rank="5"] {
+    background-color: rgba(13, 202, 240, 0.1);
+    box-shadow: 0 5px 15px rgba(13, 202, 240, 0.2);
+}
+
+/* Rank number badge */
+.rank-box .rank-number {
+    position: absolute;
+    top: -15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background-color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+}
+
+.rank-box[data-rank="1"] .rank-number {
+    color: #ffc107;
+    border: 2px solid #ffc107;
+}
+
+.rank-box[data-rank="2"] .rank-number {
+    color: #6c757d;
+    border: 2px solid #6c757d;
+}
+
+.rank-box[data-rank="3"] .rank-number {
+    color: #cd7f32;
+    border: 2px solid #cd7f32;
+}
+
+.rank-box[data-rank="4"] .rank-number {
+    color: #20c997;
+    border: 2px solid #20c997;
+}
+
+.rank-box[data-rank="5"] .rank-number {
+    color: #0dcaf0;
+    border: 2px solid #0dcaf0;
+}
+
+/* Rank label */
+.rank-box .rank-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* Highlight effect for drag and drop */
+.rank-box.highlight {
+    transform: scale(1.05);
+    border-style: dashed;
+    border-width: 3px;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.3);
+}
+
+/* Draggable member styles */
+.draggable-member {
+    cursor: grab;
+    transition: all 0.2s;
+    user-select: none;
+    background-color: white !important;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.draggable-member:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.draggable-member.dragging {
+    opacity: 0.7;
+    box-shadow: 0 10px 20px rgba(0, 123, 255, 0.2);
+}
+
+/* Ranked member styles */
+.ranked-member {
+    background-color: white !important;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 0.5rem;
+    transition: all 0.2s;
+}
+
+.ranked-member:hover .remove-member-btn {
+    opacity: 1;
+}
+
+/* Remove button */
+.remove-member-btn {
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.remove-member-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    background-color: white;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .rank-box {
+        min-width: 90px;
+        min-height: 120px;
+        padding: 0.75rem;
+    }
+
+    .rank-box .rank-number {
+        width: 35px;
+        height: 35px;
+        font-size: 1.2rem;
+    }
+
+    .rank-box .rank-label {
+        font-size: 0.75rem;
+    }
+}
+</style>
+
+</head>
+
+<body>
+{% block content %}
+<!-- CSRF Token for AJAX -->
+{% csrf_token %}
+<input type="hidden" id="csrfToken" value="{{ csrf_token }}">
+<input type="hidden" id="slotId" value="{{ slot.slot_id }}">
+<input type="hidden" id="groupName" value="{{ participant.group_name }}">
+<input type="hidden" id="currentQuestion" value="{{ current_question }}">
+<input type="hidden" id="maxRanks" value="{{ voting_parameters.max_ranks }}">
+<input type="hidden" id="totalQuestions" value="{{ level_questions|length }}">
+<input type="hidden" id="participantId" value="{{ participant.id }}">
+
+
+<div class="container py-4">
+    <div class="row">
+        <!-- LEFT SIDE: Event Information Card -->
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="feather icon-info me-2"></i>Session Information
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Top row with event info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <!-- Event Image -->
+                                {% if slot_group.event.event_photo %}
+                                <img src="{{ slot_group.event.event_photo.url }}" alt="{{ slot_group.event.event_name }}" class="rounded me-3" style="width: 90px; height: 70px; object-fit: cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="feather icon-award text-primary" style="font-size: 24px;"></i>
+                                </div>
+                                {% endif %}
+
+                                <div>
+                                    <h3 class="mb-1 fw-bold">{{ slot_group.event.event_name }}</h3>
+                                    <h6 class="fw-bold">Level {{ slot_group.level.level }} - {{ slot_group.level.name }}</h6>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="row h-100">
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-3 h-100">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-info d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; min-width: 36px;">
+                                                <i class="feather icon-hash text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted">Slot ID</div>
+                                                <div class="h5 mb-0 fw-bold">{{ slot.slot_id }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="bg-light rounded p-3 h-100">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-success d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; min-width: 36px;">
+                                                <i class="feather icon-users text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted">Group</div>
+                                                <div class="h5 mb-0 fw-bold">{{ participant.group_name }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Info and Group Members in same row -->
+                    <div class="row mb-3">
+                        <!-- Current User Info -->
+                        <div class="col-md-6">
+                            <div class="bg-light rounded p-3 h-100 d-flex align-items-center justify-content-center">
+                                <div class="d-flex align-items-center">
+                                    {% if user_profile.photo %}
+                                    <img src="{{ user_profile.photo.url }}" alt="{{ user_profile.name }}" class="rounded-circle me-3" style="width: 55px; height: 55px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                        <i class="feather icon-user text-primary" style="font-size: 22px;"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h5 class="fw-bold mb-0">Hi, {{ user_profile.name }}!</h5>
+                                        <h6 class="fw-bold text-muted">{% if user_profile.roll_number %}{{user_profile.roll_number}}{% else %}{{user_profile.staff_id}}{% endif %}</h6>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Group Members Button -->
+                        <div class="col-md-6">
+                            <div class="bg-light rounded p-3 h-100 d-flex align-items-center justify-content-center gap-3">
+                                <button class="btn btn-dark px-2 py-1" type="button" id="showGroupMembersBtn">
+                                    <i class="feather icon-users me-1" style="font-size: 1rem;"></i><span style="font-size: 1rem;">Group Members</span>
+                                </button>
+                                <button type="button" id="showNotesButton" class="btn btn-primary px-2 py-1">
+                                    <i class="feather icon-file-text me-1" style="font-size: 1rem;"></i><span style="font-size: 1rem;">Notes</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Group Members Modal (uses modern Bootstrap modal) -->
+                        <div class="modal fade" id="groupMembersModal" tabindex="-1" aria-labelledby="groupMembersModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title" id="groupMembersModalLabel">
+                                            <i class="feather icon-users me-2"></i>Group Members
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-0" style="max-height: 400px; overflow-y: auto;">
+                                        <div id="groupMembersList">
+                                            <!-- Loading indicator - Will be replaced by JavaScript -->
+                                            <div class="text-center p-4">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-3 text-muted">Loading group members...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <span class="text-muted me-auto small">Only joined members can participate in the session</span>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: Topic Card -->
+        <div class="col-md-5 mb-4 mb-md-0">
+            <div class="card shadow-sm border-0 rounded-3 mb-4" style="height: 300px;">
+                <div class="card-header bg-warning text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="feather icon-file-text me-2"></i>Your Topic
+                    </h5>
+                </div>
+                <div class="card-body p-4 d-flex flex-column justify-content-center" style="overflow: hidden;">
+                    {% if assigned_topic %}
+                    <div class="bg-light border-start border-warning border-3 rounded p-4" style="overflow-y: auto; max-height: 350px;">
+                        <h4 class="text-black fw-bold">{{ assigned_topic }}</h4>
+                    </div>
+                    {% else %}
+                    <div class="bg-light border-start border-warning border-3 rounded p-4 text-center">
+                        <i class="feather icon-clock" style="font-size: 32px;"></i>
+                        <p class="text-muted mb-0">Topic not found yet. Please wait for the instructor to assign a topic.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA: Changes based on current state -->
+    <div class="container mt-4">
+        <!-- Status alerts -->
+        <div id="statusAlerts">
+            <div class="alert alert-info alert-dismissible fade show d-none" id="statusAlert" role="alert">
+                <span id="statusAlertMessage"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- CONTENT SECTIONS -->
+
+        <!-- 1. RESULTS VIEW: When results are published -->
+        <div id="resultsContainer" class="{% if not results_published %}d-none{% endif %}">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 col-md-10 col-12 mx-auto">
+                    <div class="card shadow-sm border-0 rounded-3 mb-4">
+                        <div class="card-body p-5 text-center">
+                            <div class="mb-4">
+                                {% if participant.user_rank <= 3 %}
+                                <div class="display-1 mb-3 text-warning text-center">
+                                    <i class="bi bi-trophy-fill"></i>
+                                </div>
+                                {% else %}
+                                <div class="display-1 mb-3 text-primary text-center">
+                                    <i class="bi bi-emoji-laughing-fill"></i>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <h3 class="mb-4 text-primary text-center">Results Announced!</h3>
+
+                            <div id="userResultMessage" class="mb-4 text-center">
+                                {% if participant.user_rank and participant.user_rank <= voting_parameters.max_ranks %}
+                                    {% if participant.user_rank == 1 %}
+                                    <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                    <p class="mb-0 h5">You secured <span class="text-warning fw-bold">1st Place</span> with {{ participant.mark }} points!</p>
+                                    {% elif participant.user_rank == 2 %}
+                                    <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                    <p class="mb-0 h5">You secured <span class="text-secondary fw-bold">2nd Place</span> with {{ participant.mark }} points!</p>
+                                    {% elif participant.user_rank == 3 %}
+                                    <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                    <p class="mb-0 h5">You secured <span class="text-copper fw-bold">3rd Place</span> with {{ participant.mark }} points!</p>
+                                    {% else %}
+                                    <h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                    <p class="mb-0 h5">You secured <span class="text-primary fw-bold">{{ participant.user_rank }}th Place</span> with {{ participant.mark }} points!</p>
+                                    {% endif %}
+                                {% else %}
+                                    <h4 class="mb-2 text-secondary">Better luck next time!</h4>
+                                    <p class="mb-0 h5">You earned {{ participant.mark }} points.</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="mt-5">
+                                <h4 class="mb-3 text-primary text-center">Group Rankings</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr class="text-center">
+                                                <th class="text-center">Rank</th>
+                                                <th class="text-center">Name</th>
+                                                <th class="text-center">Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="rankingsTableBody">
+                                            {% for member in ranked_members %}
+                                            {% if forloop.counter <= voting_parameters.max_ranks %}
+                                            <tr {% if member.id == participant.id %}class="table-primary"{% endif %}>
+                                                <td class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        {% if forloop.counter == 1 %}
+                                                        <div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                            <i class="feather icon-award text-white"></i>
+                                                        </div>
+                                                        {% elif forloop.counter == 2 %}
+                                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                            <i class="feather icon-award text-white"></i>
+                                                        </div>
+                                                        {% elif forloop.counter == 3 %}
+                                                        <div class="rounded-circle bg-copper d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                            <i class="feather icon-award text-white"></i>
+                                                        </div>
+                                                        {% else %}
+                                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                            <span class="fw-bold">{{ forloop.counter }}</span>
+                                                        </div>
+                                                        {% endif %}
+                                                        <span>{{ forloop.counter }}{% if forloop.counter == 1 %}st{% elif forloop.counter == 2 %}nd{% elif forloop.counter == 3 %}rd{% else %}th{% endif %}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        {% if member.user.photo %}
+                                                        <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                                        {% else %}
+                                                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                                            <i class="feather icon-user text-secondary"></i>
+                                                        </div>
+                                                        {% endif %}
+                                                        <span>{{ member.user.name }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="fw-bold">{{ member.mark }}</span>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 pt-3 text-center">
+                                <a href="{% url 'my_slots_page' %}" class="btn btn-primary btn-lg">
+                                    <i class="feather icon-external-link me-2"></i>Exit to Slots Page
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. WAITING FOR RESULTS: When voting is completed but results aren't published -->
+        <div id="waitingContainer" class="{% if not voting_completed or participant.voting_progress.results_published %}d-none{% endif %}">
+            <div class="row justify-content-center align-items-center">
+                <div class="col-lg-8 col-md-10 col-12 mx-auto">
+                    <div class="card shadow-sm border-0 rounded-3 mb-4">
+                        <div class="card-body p-5 text-center">
+                            <div class="mb-4">
+                                <img src="{% static 'newicons/waiting.gif' %}" alt="Waiting for Results" style="width: 100px; height: 100px;">
+                            </div>
+                            <h3 class="mb-3 text-primary">Voting Completed!</h3>
+                            <p class="mb-4 text-muted">Wait for the instructor to publish the results...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. START SPEAKING: When voting not started -->
+        <div id="startSpeakingContainer" class="{% if group_voting_in_progress %}d-none{% endif %}">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm border-0 rounded-3 mb-4 bg-opacity-10">
+                        <div class="card-body p-4 text-center">
+                            <div class="mb-3">
+                                <img src="{% static 'newicons/discussion.gif' %}" alt="Ready to Speak" style="width: 300px;height:200px">
+                            </div>
+                            <h5 class="mb-3">Start Speaking</h5>
+
+                            <p id="requestStatusText" class="text-muted mb-3">Done talking? Request voting then</p>
+
+                            <!-- Request Voting Button -->
+                            <form id="requestVotingForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="request_voting">
+                                <button type="submit" id="requestVotingBtn" class="btn btn-primary mt-3" {% if participant.request_voting == 'request' %}disabled{% endif %}>
+                                    {% if participant.request_voting == 'request' %}
+                                        <i class="feather icon-check me-2"></i>Voting Request Sent
+                                    {% else %}
+                                        <i class="feather icon-play-circle me-2"></i>Request Voting for My Group
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!-- 4. QUESTIONS AND RANKINGS: During the voting process -->
+        <div id="questionsContainer" class="{% if not group_voting_in_progress %}d-none{% endif %}">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow-sm border-0 rounded-3 mb-4">
+                        <div class="card-header bg-primary text-white py-3">
+                            <h5 class="mb-0">
+                                <i class="feather icon-help-circle me-2"></i>Question and Ranking
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <!-- Question Display -->
+                            {% for question in level_questions %}
+                            <div class="question-item {% if forloop.counter == current_question %}active{% else %}d-none{% endif %}" data-question-index="{{ forloop.counter }}">
+                                <!-- Question with Circle Number -->
+                                <div class="d-flex mb-3">
+                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px; min-width: 36px;">
+                                        <span class="text-white fw-bold">{{ forloop.counter }}</span>
+                                    </div>
+                                    <div class="bg-light border-start border-primary border-3 rounded p-3 flex-grow-1">
+                                        <h5 class="text-dark mb-0">{{ question.question_text }}</h5>
+                                    </div>
+                                </div>
+
+                                <!-- Question progress indicator -->
+
+
+                                <!-- Group Members Scrollable Row -->
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="text-secondary mb-0">Group Members</h6>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-secondary scroll-btn-left" type="button">
+                                                <i class="feather icon-chevron-left"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary scroll-btn-right" type="button">
+                                                <i class="feather icon-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="position-relative">
+                                    <div id="unrankedContainer{{ forloop.counter }}"
+                                        class="droppable-area d-flex flex-row overflow-auto py-2 px-3 scrollable-container"
+                                        style="min-height: 110px; scroll-behavior: smooth; border: none;">
+                                        {% for member in group_members %}
+                                            {% if member.user.id != user_profile.id %}  <!-- Don't include current user -->
+                                            <div class="draggable-member bg-light rounded p-2 me-3 text-center position-relative"
+                                                 style="min-width: 80px;"
+                                                 data-member-id="{{ member.id }}"
+                                                 data-question="{{ forloop.parentloop.counter }}">
+                                                <!-- Menu toggle -->
+                                                <div class="member-menu-toggle position-absolute" style="top: 5px; right: 5px; cursor: pointer;">
+                                                    <i class="feather icon-more-vertical"></i>
+                                                </div>
+
+                                                <div class="d-flex flex-column align-items-center">
+                                                    {% if member.user.photo %}
+                                                    <img src="{{ member.user.photo.url }}" alt="{{ member.user.name }}" class="rounded-circle mb-1" style="width: 70px; height: 70px; object-fit: cover;">
+                                                    {% else %}
+                                                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mb-1" style="width: 70px; height: 70px;">
+                                                        <i class="feather icon-user text-white" style="font-size: 24px;"></i>
+                                                    </div>
+                                                    {% endif %}
+                                                    <span class="small text-truncate" style="max-width: 80px;">{{ member.user.name }}</span>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Ranking Section -->
+                                <div class="mb-3">
+                                    <h6 class="text-secondary mb-2">Rankings</h6>
+                                    <div class="d-flex flex-wrap gap-2" id="rankingsContainer{{ forloop.counter }}">
+                                        <!-- Rank boxes will be generated by JavaScript -->
+                                    </div>
+                                </div>
+
+
+
+                                <!-- Question Navigation -->
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <div>
+                                        <!-- Skip Question Button - renamed from "Mark Absent" -->
+                                        <button type="button" class="btn btn-outline-secondary skip-question-btn" data-question="{{ forloop.counter }}">
+                                            <i class="feather icon-skip-forward me-2"></i>Skip This Question
+                                        </button>
+                                    </div>
+
+                                    <div id="questionMessage{{ forloop.counter }}" class="text-success fw-bold text-center" style="display: none;">
+                                        Vote saved successfully!
+                                    </div>
+
+                                    <div>
+                                        {% if forloop.last %}
+                                        <button class="btn btn-primary finish-button" data-question="{{ forloop.counter }}" disabled>
+                                            <i class="feather icon-flag me-2"></i>Finish
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-primary next-question-button" data-question="{{ forloop.counter }}" disabled>
+                                            Next<i class="feather icon-arrow-right ms-2"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                            </div>
+                            {% empty %}
+                            <div class="alert alert-info">
+                                <p class="mb-0">No questions available for this level.</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Notes Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="notesModalLabel">
+                    <i class="feather icon-edit-3 me-2"></i>My Notes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Store saved notes content -->
+                <input type="hidden" id="savedNotesContent" value="{{ saved_notes|escapejs }}">
+
+                <!-- Quill Editor Container -->
+                <div id="editor-container" style="height: 350px; overflow-y: auto;">{{ saved_notes|safe }}</div>
+
+                <!-- Instructions -->
+                <div class="mt-3 p-2 bg-light rounded small">
+                    <p class="mb-1"><strong>Tips:</strong></p>
+                    <ul class="mb-0">
+                        <li>Use <strong>Bold</strong>, <em>Italic</em> and other formatting options from the toolbar</li>
+                        <li>Create ordered (123) or bullet lists to organize your thoughts</li>
+                        <li>Check boxes can be used for to-do items</li>
+                        <li>Your notes are automatically saved when you click "Save Notes"</li>
+                        <li>Download as PDF creates a well-formatted document you can save or print</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="d-flex flex-column flex-sm-row justify-content-between w-100 gap-2">
+                    <button type="button" class="btn btn-outline-danger order-2 order-sm-1" id="clearNotesBtn">
+                        <i class="feather icon-trash-2 me-1"></i>Clear Notes
+                    </button>
+                    <div class="d-flex flex-column flex-sm-row gap-2 order-1 order-sm-2">
+                        <button type="button" class="btn btn-outline-primary" id="downloadPdfBtn">
+                            <i class="feather icon-download me-1"></i>Download PDF
+                        </button>
+                        <button type="button" class="btn btn-primary" id="saveNotesBtn">
+                            <i class="feather icon-save me-1"></i>Save Notes
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ranking Dropdown Template (Used by JavaScript) -->
+<div id="rankDropdownTemplate" class="position-fixed bg-white shadow-sm rounded p-0" style="display: none; z-index: 1050; min-width: 180px;">
+    <div class="dropdown-header p-2 border-bottom">
+        <small class="fw-bold">Assign Rank</small>
+    </div>
+    <div class="rank-options p-0" style="max-height: 60vh; overflow-y: auto;">
+        <!-- Rank options will be dynamically populated by JavaScript -->
+    </div>
+</div>
+
+
+<!-- JavaScript for AJAX functionality -->
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Add fallback for missing elements to prevent errors
+    function getElementValueSafely(id, defaultVal = '') {
+        const element = document.getElementById(id);
+        return element ? element.value : defaultVal;
+    }
+
+    addDragDropStyles();
+
+    // Constants with fallbacks for missing elements
+    const slotId = getElementValueSafely('slotId');
+    const groupName = getElementValueSafely('groupName');
+    const csrfToken = getElementValueSafely('csrfToken', document.querySelector('input[name="csrfmiddlewaretoken"]')?.value);
+    const maxRanks = parseInt(getElementValueSafely('maxRanks', '3')) || 3;
+    let currentQuestion = parseInt(getElementValueSafely('currentQuestion', '1')) || 1;
+    const totalQuestions = parseInt(getElementValueSafely('totalQuestions', '1')) || 1;
+
+    // Storage for rankings to avoid auto-submission
+    window.questionRankings = {};
+
+    // Check if Bootstrap is loaded before calling setup functions
+    const isBootstrapLoaded = typeof bootstrap !== 'undefined';
+    if (!isBootstrapLoaded) {
+        console.warn('Bootstrap appears to be missing. Modal functionality may not work correctly.');
+    }
+
+    // Setup components - with error handling to prevent one failure from breaking everything
+    try { setupNotesModal(); } catch (e) { console.error('Failed to setup notes modal:', e); }
+    try { setupGroupMembersModal(); } catch (e) { console.error('Failed to setup group members modal:', e); }
+    try { setupRankBoxes(); } catch (e) { console.error('Failed to setup rank boxes:', e); }
+    try { setupRankingDragDrop(); } catch (e) { console.error('Failed to setup ranking drag & drop:', e); }
+    try { setupRequestVoting(); } catch (e) { console.error('Failed to setup request voting:', e); }
+    try { setupNavigationButtons(); } catch (e) { console.error('Failed to setup navigation buttons:', e); }
+    try { setupSkipButtons(); } catch (e) { console.error('Failed to setup skip buttons:', e); }
+    try { shuffleUnrankedMembers(currentQuestion); } catch (e) { console.error('Failed to shuffle members:', e); }
+
+
+
+    // Start polling for updates
+    startStatusPolling();
+
+    // ENHANCED NOTES MODAL
+    function setupNotesModal() {
+    // Check if required elements exist
+    const notesBtn = document.getElementById('showNotesButton');
+    const editorContainer = document.getElementById('editor-container');
+    const notesModal = document.getElementById('notesModal');
+
+    if (!notesBtn || !notesModal) {
+        console.error('Notes modal or button not found in the DOM');
+        return;
+    }
+
+    // Get slot ID and group name for storage key
+    const slotId = document.getElementById('slotId')?.value || '';
+    const groupName = document.getElementById('groupName')?.value || '';
+    const storageKey = `notes_${slotId}_${groupName}`;
+
+    // Variables for auto-save
+    let autoSaveInterval = null;
+    const AUTO_SAVE_DELAY = 5000; // Auto-save every 5 seconds
+    let lastAutoSave = null; // Track the last auto-saved content
+    let autoSaveIndicator = null; // Element to show auto-save status
+
+    // Only initialize Quill if the editor container exists
+    let quill = null;
+    if (editorContainer) {
+        // Check if Quill is available
+        if (typeof Quill === 'undefined') {
+            console.error('Quill library not loaded.');
+            editorContainer.innerHTML = '<div class="alert alert-danger">Error: Quill editor not available. Please refresh the page.</div>';
+        } else {
+            // Initialize Quill with all formatting options
+            quill = new Quill('#editor-container', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],         // toggled buttons
+                        ['blockquote', 'code-block'],                      // blocks
+                        [{ 'header': 1 }, { 'header': 2 }],                // custom button values
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }, { 'list': 'check' }],  // lists including checkboxes
+                        [{ 'script': 'sub'}, { 'script': 'super' }],       // superscript/subscript
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],           // outdent/indent
+                        [{ 'color': [] }, { 'background': [] }],           // dropdown with defaults
+                        ['clean']                                          // remove formatting button
+                    ]
+                },
+                placeholder: 'Write your notes here...'
+            });
+
+            // First check localStorage for saved notes
+            try {
+                const localStorageNotes = localStorage.getItem(storageKey);
+                if (localStorageNotes) {
+                    quill.root.innerHTML = localStorageNotes;
+                    lastAutoSave = localStorageNotes; // Initialize last saved content
+                } else {
+                    // If not in localStorage, check for saved notes from server (backward compatibility)
+                    const savedNotes = document.getElementById('savedNotesContent');
+                    if (savedNotes && savedNotes.value) {
+                        quill.root.innerHTML = savedNotes.value;
+                        lastAutoSave = savedNotes.value;
+                        // Also save to localStorage for future use
+                        localStorage.setItem(storageKey, savedNotes.value);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading notes from localStorage:', error);
+                // Fall back to savedNotesContent if localStorage fails
+                const savedNotes = document.getElementById('savedNotesContent');
+                if (savedNotes && savedNotes.value) {
+                    quill.root.innerHTML = savedNotes.value;
+                    lastAutoSave = savedNotes.value;
+                }
+            }
+
+            // Create auto-save indicator
+            autoSaveIndicator = document.createElement('div');
+            autoSaveIndicator.className = 'auto-save-indicator';
+            autoSaveIndicator.style.cssText = 'position: absolute; right: 10px; bottom: 10px; font-size: 12px; color: #6c757d; opacity: 0; transition: opacity 0.3s ease;';
+            editorContainer.parentNode.style.position = 'relative'; // Ensure parent has positioning
+            editorContainer.parentNode.appendChild(autoSaveIndicator);
+
+            // Function to save notes to localStorage
+            const saveNotesToStorage = (showIndicator = true) => {
+                const currentContent = quill.root.innerHTML;
+
+                // Only save if content has changed
+                if (currentContent !== lastAutoSave) {
+                    try {
+                        localStorage.setItem(storageKey, currentContent);
+                        lastAutoSave = currentContent;
+
+                        // Show auto-save indicator if requested
+                        if (showIndicator) {
+                            autoSaveIndicator.textContent = 'Auto-saved';
+                            autoSaveIndicator.style.opacity = '1';
+
+                            // Hide indicator after 2 seconds
+                            setTimeout(() => {
+                                autoSaveIndicator.style.opacity = '0';
+                            }, 2000);
+                        }
+                    } catch (error) {
+                        console.error('Error auto-saving notes to localStorage:', error);
+                    }
+                }
+            };
+
+            // Set up auto-save on content changes
+            quill.on('text-change', () => {
+                // Auto-save will happen after a delay of inactivity
+                if (autoSaveInterval) {
+                    clearTimeout(autoSaveInterval);
+                }
+
+                // Schedule new auto-save
+                autoSaveInterval = setTimeout(() => {
+                    saveNotesToStorage(true);
+                }, AUTO_SAVE_DELAY);
+            });
+        }
+    }
+
+    // Show notes modal - with Bootstrap 5 compatibility
+    notesBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (typeof bootstrap !== 'undefined') {
+            try {
+                const bsModal = new bootstrap.Modal(notesModal);
+                bsModal.show();
+
+                // Start auto-save when modal is shown
+                if (quill) {
+                    autoSaveInterval = setTimeout(() => {
+                        saveNotesToStorage(false); // Initial save without indicator
+                    }, AUTO_SAVE_DELAY);
+                }
+            } catch (error) {
+                console.error('Error showing notes modal with Bootstrap:', error);
+                // Fallback to manual display if Bootstrap modal fails
+                notesModal.style.display = 'block';
+                notesModal.classList.add('show');
+                document.body.classList.add('modal-open');
+            }
+        } else {
+            // Manual modal display if Bootstrap isn't available
+            notesModal.style.display = 'block';
+            notesModal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+    });
+
+    // Handle modal close events - save notes on close
+    notesModal.addEventListener('hide.bs.modal', function() {
+        if (quill) {
+            // Final save when closing modal
+            const currentContent = quill.root.innerHTML;
+            if (currentContent !== lastAutoSave) {
+                try {
+                    localStorage.setItem(storageKey, currentContent);
+                    lastAutoSave = currentContent;
+                } catch (error) {
+                    console.error('Error saving notes on modal close:', error);
+                }
+            }
+
+            // Clear auto-save interval when modal is closed
+            if (autoSaveInterval) {
+                clearTimeout(autoSaveInterval);
+            }
+        }
+    });
+
+    // Setup save notes button (still useful for manual saves)
+    const saveBtn = document.getElementById('saveNotesBtn');
+    if (saveBtn && quill) {
+        saveBtn.addEventListener('click', function() {
+            const notesContent = quill.root.innerHTML;
+            const originalText = saveBtn.innerHTML;
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Saving...';
+
+            // Save notes to localStorage
+            try {
+                localStorage.setItem(storageKey, notesContent);
+                lastAutoSave = notesContent; // Update last saved content
+
+                // Reset button after short delay for feedback
+                setTimeout(() => {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    showAlert('success', 'Notes saved successfully!');
+                }, 500);
+            } catch (error) {
+                console.error('Error saving notes to localStorage:', error);
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                showAlert('danger', 'Error saving notes. Please try again.');
+            }
+        });
+    }
+
+    // Setup clear notes button
+    const clearBtn = document.getElementById('clearNotesBtn');
+    if (clearBtn && quill) {
+        clearBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear your notes? This cannot be undone.')) {
+                quill.setText('');
+                // Also clear from localStorage
+                try {
+                    localStorage.removeItem(storageKey);
+                    lastAutoSave = ''; // Reset last saved content
+                } catch (error) {
+                    console.error('Error clearing notes from localStorage:', error);
+                }
+            }
+        });
+    }
+
+    // Add exit handler to clear notes when leaving the room
+    const exitBtn = document.querySelector('a[href*="my_slots_page"]');
+    if (exitBtn) {
+        exitBtn.addEventListener('click', function() {
+            // Clear notes from localStorage when exiting room
+            try {
+                localStorage.removeItem(storageKey);
+                console.log('Notes cleared from localStorage on exit');
+            } catch (error) {
+                console.error('Error clearing notes on exit:', error);
+            }
+        });
+    }
+
+    // Setup download PDF button
+    const downloadBtn = document.getElementById('downloadPdfBtn');
+    if (downloadBtn && quill) {
+        downloadBtn.addEventListener('click', function() {
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Creating PDF...';
+
+            try {
+                // Check if required libraries are loaded
+                if (typeof html2canvas === 'undefined') {
+                    throw new Error('html2canvas library is not loaded');
+                }
+
+                if (typeof jspdf === 'undefined' || typeof jspdf.jsPDF === 'undefined') {
+                    throw new Error('jsPDF library is not loaded');
+                }
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Get editor content
+                const content = quill.root.innerHTML;
+
+                // Create a temporary div with proper styling for PDF
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                tempDiv.style.width = '170mm';
+                tempDiv.style.padding = '15mm';
+                tempDiv.style.backgroundColor = 'white';
+                tempDiv.style.color = 'black';
+                tempDiv.style.fontFamily = 'Arial, sans-serif';
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+
+                // Apply additional styling for better PDF output
+                tempDiv.querySelectorAll('*').forEach(el => {
+                    // Ensure good contrast
+                    if (el.style.color && el.style.color.includes('rgb')) {
+                        el.style.color = '#000';
+                    }
+
+                    // Format lists properly
+                    if (el.tagName === 'LI') {
+                        el.style.marginLeft = '20px';
+                        el.style.marginBottom = '5px';
+                    }
+
+                    // Enhance heading styles
+                    if (['H1', 'H2', 'H3'].includes(el.tagName)) {
+                        el.style.marginTop = '10px';
+                        el.style.marginBottom = '5px';
+                        el.style.fontWeight = 'bold';
+                    }
+
+                    // Format checkboxes nicely
+                    if (el.classList.contains('ql-ui') && el.getAttribute('data-value') === 'check') {
+                        // This will convert the Quill checkbox to a more PDF-friendly version
+                        el.textContent = '☑ ';
+                        el.style.marginRight = '5px';
+                    }
+                });
+
+                document.body.appendChild(tempDiv);
+
+                // Use html2canvas to capture the content
+                html2canvas(tempDiv, {
+                    scale: 2, // Higher resolution
+                    useCORS: true,
+                    logging: false
+                }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+                    // Add title to the PDF
+                    doc.setFontSize(16);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Notes from Session " + slotId, 14, 15);
+                    doc.setFontSize(12);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Group: " + groupName, 14, 22);
+                    doc.setFontSize(10);
+                    doc.text("Generated: " + new Date().toLocaleString(), 14, 28);
+
+                    // Add image to PDF
+                    const imgWidth = 170;
+                    const pageHeight = 270;
+                    const imgHeight = canvas.height * imgWidth / canvas.width;
+                    let heightLeft = imgHeight;
+                    let position = 35; // Start after the title
+
+                    doc.addImage(imgData, 'JPEG', 20, position, imgWidth, imgHeight);
+                    heightLeft -= (pageHeight - position);
+
+                    // Add new pages if content is longer than one page
+                    while (heightLeft >= 0) {
+                        position = heightLeft - imgHeight;
+                        doc.addPage();
+                        doc.addImage(imgData, 'JPEG', 20, 10, imgWidth, imgHeight, '', 'FAST');
+                        heightLeft -= pageHeight;
+                    }
+
+                    // Generate filename with date/time
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    const filename = `Notes_Slot${slotId}_Group${groupName}_${timestamp}.pdf`;
+
+                    // Download the PDF
+                    doc.save(filename);
+
+                    // Remove the temporary div
+                    document.body.removeChild(tempDiv);
+
+                    // Reset button
+                    downloadBtn.disabled = false;
+                    downloadBtn.innerHTML = originalText;
+
+                }).catch(error => {
+                    console.error('Error generating PDF:', error);
+                    alert('Error generating PDF: ' + error.message);
+                    downloadBtn.disabled = false;
+                    downloadBtn.innerHTML = originalText;
+                });
+            } catch (error) {
+                console.error('Error in PDF generation setup:', error);
+                alert('Error preparing PDF generation: ' + error.message);
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = originalText;
+            }
+        });
+    }
+}
+
+    // ENHANCED GROUP MEMBERS MODAL
+    function setupGroupMembersModal() {
+        const groupMembersBtn = document.getElementById('showGroupMembersBtn');
+        const groupMembersModal = document.getElementById('groupMembersModal');
+
+        if (!groupMembersBtn || !groupMembersModal) {
+            console.error('Group members modal or button not found in the DOM');
+            return;
+        }
+
+        // Event listener for showing the modal
+        groupMembersBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Show the modal first for better UX (doesn't wait for data)
+            if (isBootstrapLoaded) {
+                try {
+                    const bsModal = new bootstrap.Modal(groupMembersModal);
+                    bsModal.show();
+                } catch (error) {
+                    console.error('Error showing group members modal with Bootstrap:', error);
+                    // Fallback to manual display
+                    groupMembersModal.style.display = 'block';
+                    groupMembersModal.classList.add('show');
+                    document.body.classList.add('modal-open');
+                }
+            } else {
+                // Manual display if Bootstrap isn't available
+                groupMembersModal.style.display = 'block';
+                groupMembersModal.classList.add('modal-open');
+                document.body.classList.add('modal-open');
+            }
+
+            // Show loading state
+            const groupMembersList = document.getElementById('groupMembersList');
+            if (groupMembersList) {
+                groupMembersList.innerHTML = `
+                    <div class="text-center p-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading members...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading group members...</p>
+                    </div>
+                `;
+            }
+
+            // Then fetch the data
+            fetchGroupMembers();
+        });
+
+        // Add event listener for close button if Bootstrap isn't loaded
+        const closeButtons = groupMembersModal.querySelectorAll('[data-bs-dismiss="modal"]');
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                if (!isBootstrapLoaded) {
+                    groupMembersModal.style.display = 'none';
+                    groupMembersModal.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+
+                    // Remove backdrop if it exists
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }
+            });
+        });
+    }
+
+    function fetchGroupMembers() {
+        fetch(`/slot/${slotId}/room/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams({
+                'action': 'get_group_members'
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                updateGroupMembersList(data.members || []);
+            } else {
+                const groupMembersList = document.getElementById('groupMembersList');
+                if (groupMembersList) {
+                    groupMembersList.innerHTML = `
+                        <div class="text-center p-4">
+                            <p class="text-danger">
+                                <i class="feather icon-alert-triangle me-2"></i>
+                                ${data.message || 'Error loading members'}
+                            </p>
+                        </div>
+                    `;
+                }
+                console.error('Error loading group members:', data.message);
+            }
+        })
+        .catch(error => {
+            const groupMembersList = document.getElementById('groupMembersList');
+            if (groupMembersList) {
+                groupMembersList.innerHTML = `
+                    <div class="text-center p-4">
+                        <p class="text-danger">
+                            <i class="feather icon-alert-triangle me-2"></i>
+                            Error loading members
+                        </p>
+                        <p class="small text-muted">${error.message}</p>
+                    </div>
+                `;
+            }
+            console.error('Error fetching group members:', error);
+        });
+    }
+
+    function updateGroupMembersList(members) {
+        const listContainer = document.getElementById('groupMembersList');
+        if (!listContainer) return;
+
+        if (!members || members.length === 0) {
+            listContainer.innerHTML = '<div class="text-center p-4"><p>No members found in this group</p></div>';
+            return;
+        }
+
+        listContainer.innerHTML = '';
+
+        members.forEach(member => {
+            const joined = member.joined;
+            const memberDiv = document.createElement('div');
+            memberDiv.className = 'd-flex justify-content-between align-items-center p-3 border-bottom';
+
+            const photoHtml = member.photo_url ?
+                `<img src="${member.photo_url}" alt="${member.name}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">` :
+                `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                    <i class="feather icon-user text-secondary" style="font-size: 18px;"></i>
+                </div>`;
+
+            memberDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    ${photoHtml}
+                    <div>
+                        <div class="text-black fw-bold" style="font-size: 15px;margin-bottom: 3px;">${member.name}</div>
+                        <div style="font-size: 12px; color: #666;">${member.roll_number || member.staff_id || ''}</div>
+                    </div>
+                </div>
+                <div class="member-status">
+                    ${joined ?
+                        '<span class="badge bg-success">Joined</span>' :
+                        '<span class="badge bg-danger">Not Joined</span>'}
+                </div>
+            `;
+
+            listContainer.appendChild(memberDiv);
+        });
+    }
+
+    // ENHANCED RANK BOXES WITH COLORFUL UI
+    function setupRankBoxes() {
+        // Create rank boxes for each question
+        for (let q = 1; q <= totalQuestions; q++) {
+            const container = document.getElementById(`rankingsContainer${q}`);
+            if (!container) continue;
+
+            container.innerHTML = '';
+
+            // Create rank boxes based on maxRanks with improved UI
+            for (let i = 1; i <= maxRanks; i++) {
+                const rankBox = document.createElement('div');
+                rankBox.className = 'rank-box';
+                rankBox.dataset.rank = i;
+                rankBox.dataset.question = q;
+
+                // Define rank labels based on position
+                let rankLabel = `Rank ${i}`;
+                if (i === 1) rankLabel = "First Place";
+                else if (i === 2) rankLabel = "Second Place";
+                else if (i === 3) rankLabel = "Third Place";
+
+                rankBox.innerHTML = `
+                    <div class="rank-number">${i}</div>
+                    <div class="rank-label">${rankLabel}</div>
+                    <div class="rank-member-container"></div>
+                    <div class="empty-state-text text-muted small" style="opacity: 0.7;">
+                        <i class="feather icon-user-plus"></i><br>
+                        Click to assign
+                    </div>
+                `;
+                container.appendChild(rankBox);
+
+                // Add click handler to rank box
+                rankBox.addEventListener('click', function() {
+                    showMemberSelectionModal(q, i);
+                });
+            }
+
+            // Load existing rankings if available
+            loadExistingRankings(q);
+        }
+
+        // Add CSS for colorful rank boxes
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+            /* UPDATED RANK BOX STYLES FOR MORE COLORFUL UI */
+            .rank-box {
+                border: 2px dashed #dee2e6;
+                border-radius: 0.75rem;
+                padding: 1rem;
+                min-height: 130px;
+                min-width: 110px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s;
+                position: relative;
+                background-color: #f8f9fa;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                cursor: pointer;
+            }
+
+            .rank-box:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+
+            /* Colorful rank styling */
+            .rank-box[data-rank="1"] {
+                border-color: #ffc107;
+                background-color: rgba(255, 193, 7, 0.05);
+            }
+
+            .rank-box[data-rank="2"] {
+                border-color: #6c757d;
+                background-color: rgba(108, 117, 125, 0.05);
+            }
+
+            .rank-box[data-rank="3"] {
+                border-color: #cd7f32;
+                background-color: rgba(205, 127, 50, 0.05);
+            }
+
+            .rank-box[data-rank="4"] {
+                border-color: #20c997;
+                background-color: rgba(32, 201, 151, 0.05);
+            }
+
+            .rank-box[data-rank="5"] {
+                border-color: #0dcaf0;
+                background-color: rgba(13, 202, 240, 0.05);
+            }
+
+            /* Filled state styling */
+            .rank-box.filled {
+                border-style: solid;
+                border-width: 3px;
+                transform: translateY(-3px);
+            }
+
+            .rank-box.filled[data-rank="1"] {
+                background-color: rgba(255, 193, 7, 0.1);
+                box-shadow: 0 5px 15px rgba(255, 193, 7, 0.2);
+            }
+
+            .rank-box.filled[data-rank="2"] {
+                background-color: rgba(108, 117, 125, 0.1);
+                box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+            }
+
+            .rank-box.filled[data-rank="3"] {
+                background-color: rgba(205, 127, 50, 0.1);
+                box-shadow: 0 5px 15px rgba(205, 127, 50, 0.2);
+            }
+
+            .rank-box.filled[data-rank="4"] {
+                background-color: rgba(32, 201, 151, 0.1);
+                box-shadow: 0 5px 15px rgba(32, 201, 151, 0.2);
+            }
+
+            .rank-box.filled[data-rank="5"] {
+                background-color: rgba(13, 202, 240, 0.1);
+                box-shadow: 0 5px 15px rgba(13, 202, 240, 0.2);
+            }
+
+            /* Rank number badge */
+            .rank-box .rank-number {
+                position: absolute;
+                top: -15px;
+                font-size: 1.5rem;
+                font-weight: bold;
+                background-color: white;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                transition: all 0.3s;
+            }
+
+            .rank-box[data-rank="1"] .rank-number {
+                color: #ffc107;
+                border: 2px solid #ffc107;
+            }
+
+            .rank-box[data-rank="2"] .rank-number {
+                color: #6c757d;
+                border: 2px solid #6c757d;
+            }
+
+            .rank-box[data-rank="3"] .rank-number {
+                color: #cd7f32;
+                border: 2px solid #cd7f32;
+            }
+
+            .rank-box[data-rank="4"] .rank-number {
+                color: #20c997;
+                border: 2px solid #20c997;
+            }
+
+            .rank-box[data-rank="5"] .rank-number {
+                color: #0dcaf0;
+                border: 2px solid #0dcaf0;
+            }
+
+            /* Rank label */
+            .rank-box .rank-label {
+                font-size: 0.85rem;
+                color: #6c757d;
+                margin-top: 1.5rem;
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+            }
+
+            /* Highlight effect for hover */
+            .rank-box:hover:not(.filled) .empty-state-text {
+                transform: scale(1.1);
+            }
+
+            .rank-box.filled .empty-state-text {
+                display: none;
+            }
+
+            /* Ranked member styles */
+            .ranked-member {
+                background-color: white !important;
+                border: 1px solid #eaeaea;
+                box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                padding: 0.5rem;
+                transition: all 0.2s;
+                position: relative;
+            }
+
+            .ranked-member:hover .remove-member-btn {
+                opacity: 1;
+            }
+
+            /* Remove button */
+            .remove-member-btn {
+                opacity: 0.7;
+                transition: all 0.2s;
+                cursor: pointer;
+            }
+
+            .remove-member-btn:hover {
+                opacity: 1;
+                transform: scale(1.1);
+                background-color: white;
+            }
+
+            /* Empty state text - shown when box is empty */
+            .rank-box .empty-state-text {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                color: #adb5bd;
+                font-size: 0.8rem;
+                transition: all 0.2s;
+            }
+
+            .rank-box.filled .empty-state-text {
+                display: none;
+            }
+
+            /* Background color for copper */
+            .bg-copper {
+                background-color: #cd7f32 !important;
+            }
+
+            /* Mobile optimizations */
+            @media (max-width: 768px) {
+                .rank-box {
+                    min-width: 90px;
+                    min-height: 120px;
+                    padding: 0.75rem;
+                }
+
+                .rank-box .rank-number {
+                    width: 35px;
+                    height: 35px;
+                    font-size: 1.2rem;
+                }
+
+                .rank-box .rank-label {
+                    font-size: 0.75rem;
+                }
+            }
+        `;
+        document.head.appendChild(styleEl);
+    }
+
+    function loadExistingRankings(questionNumber) {
+     shuffleUnrankedMembers(questionNumber);
+    // AJAX request to get existing rankings for this question
+    fetch(`/slot/${slotId}/room/?action=status_update&question=${questionNumber}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success' && data.existing_rankings) {
+            const rankings = data.existing_rankings;
+
+            // Store rankings in our local object
+            window.questionRankings = window.questionRankings || {};
+            window.questionRankings[questionNumber] = rankings;
+
+            // For each ranking, find the member and place in the correct rank box
+            Object.keys(rankings).forEach(rankKey => {
+                if (!rankKey.startsWith('rank')) return;
+
+                const rank = parseInt(rankKey.replace('rank', ''));
+                const memberId = rankings[rankKey];
+
+                // Find the member element
+                const memberElement = document.querySelector(`.draggable-member[data-member-id="${memberId}"][data-question="${questionNumber}"]`);
+                if (!memberElement) return;
+
+                // Find the rank box
+                const rankBox = document.querySelector(`.rank-box[data-rank="${rank}"][data-question="${questionNumber}"]`);
+                if (!rankBox) return;
+
+                // Clone the member element and place in the rank box
+                const memberClone = memberElement.cloneNode(true);
+
+                // Replace triple dot menu with remove button
+                const menuToggle = memberClone.querySelector('.member-menu-toggle');
+                if (menuToggle) {
+                    menuToggle.outerHTML = `
+                        <div class="remove-member-btn position-absolute" style="top: 5px; right: 5px; cursor: pointer;
+                            background-color: rgba(255, 255, 255, 0.9); border-radius: 50%; width: 24px; height: 24px;
+                            display: flex; align-items: center; justify-content: center; border: 1px solid #dc3545;">
+                            <i class="feather icon-x text-danger" style="font-size: 16px;"></i>
+                        </div>
+                    `;
+                }
+
+                // Make this a ranked member instead of a draggable one
+                memberClone.classList.remove('draggable-member');
+                memberClone.classList.add('ranked-member');
+                memberClone.style.display = 'block';
+                memberClone.dataset.memberId = memberId; // Ensure member ID is retained
+                memberClone.setAttribute('draggable', 'true'); // Make ranked members draggable
+
+                // Add drag events to ranked member
+                memberClone.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', this.dataset.memberId);
+                    e.dataTransfer.setData('question', questionNumber);
+                    this.classList.add('dragging');
+                });
+
+                memberClone.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+
+                rankBox.querySelector('.rank-member-container').appendChild(memberClone);
+                rankBox.classList.add('filled');
+
+                // Hide the original member element
+                memberElement.style.display = 'none';
+
+                // Add event listener for removal
+                setTimeout(() => {
+                    const removeBtn = memberClone.querySelector('.remove-member-btn');
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation(); // Prevent triggering the rank box click
+                            // Remove from rank and show in unranked area
+                            removeFromRank(memberId, rank, questionNumber);
+                        });
+                    }
+                }, 0);
+            });
+
+            // Update next button status based on filled ranks
+            updateNextButtonStatus(questionNumber);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading existing rankings:', error);
+    });
+}
+
+// Modify the setupRankingDragDrop function
+function setupRankingDragDrop() {
+    // Make only the triple dots clickable to show rank options
+    document.querySelectorAll('.draggable-member .member-menu-toggle').forEach(menuToggle => {
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent triggering the member element click
+
+            // Get member element (parent of the menu toggle)
+            const memberEl = this.closest('.draggable-member');
+            if (!memberEl) return;
+
+            // Get current question number from the active question item
+            const activeQuestion = document.querySelector('.question-item.active');
+            if (!activeQuestion) return;
+
+            const questionNumber = activeQuestion.dataset.questionIndex;
+            const memberId = memberEl.dataset.memberId;
+
+            // Show rank selection dialog
+            showMemberSelectionDialog(memberId, questionNumber);
+        });
+    });
+
+    // Initialize drag and drop functionality for desktop
+    initDragAndDrop();
+
+    // Initialize touch-based drag and drop for mobile
+    initMobileDragDrop();
+
+    // Create modal for member selection if needed
+    if (!document.getElementById('memberSelectionModal')) {
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'memberSelectionModal';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-hidden', 'true');
+
+        modal.innerHTML = `
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Assign Member</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <div id="memberSelectionList" class="list-group list-group-flush">
+                            <!-- Members will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+}
+
+
+function initMobileDragDrop() {
+    let draggedElement = null;
+    let currentQuestion = null;
+    let touchTimeout = null;
+    const longPressDuration = 100; // ms for long press
+
+    // Add touch event listeners to draggable members
+    document.querySelectorAll('.draggable-member').forEach(memberEl => {
+        // Start touch - track potential drag
+        memberEl.addEventListener('touchstart', function(e) {
+            // Don't start drag if touching the menu toggle
+            if (e.target.closest('.member-menu-toggle')) return;
+
+            // Start timer for long press
+            touchTimeout = setTimeout(() => {
+                draggedElement = this;
+                currentQuestion = this.dataset.question;
+                this.classList.add('touch-dragging');
+
+                // Show visual feedback
+                showMobileDragFeedback(true, this.querySelector('.small').textContent);
+
+                // Prevent scrolling during drag
+                document.body.style.overflow = 'hidden';
+            }, longPressDuration);
+        }, { passive: false });
+
+        // Cancel drag on touch move if still in timer
+        memberEl.addEventListener('touchmove', function(e) {
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+
+            // If we're dragging, prevent default to stop scrolling
+            if (draggedElement) {
+                e.preventDefault();
+
+                // Move the feedback element to follow the touch
+                const touch = e.touches[0];
+                updateMobileDragPosition(touch.clientX, touch.clientY);
+
+                // Highlight potential drop targets
+                highlightDropTarget(touch.clientX, touch.clientY, currentQuestion);
+            }
+        }, { passive: false });
+
+        // End drag on touch end
+        memberEl.addEventListener('touchend', function(e) {
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+
+            if (draggedElement) {
+                e.preventDefault();
+
+                // Check if there's a valid drop target at the touch position
+                const touch = e.changedTouches[0];
+                const dropTarget = getDropTargetAt(touch.clientX, touch.clientY, currentQuestion);
+
+                // Process the drop
+                if (dropTarget) {
+                    const rankBox = dropTarget.closest('.rank-box');
+                    if (rankBox) {
+                        assignRank(draggedElement.dataset.memberId, rankBox.dataset.rank, currentQuestion);
+                    } else if (dropTarget.id.startsWith('unrankedContainer')) {
+                        // Find which rank this member is in
+                        document.querySelectorAll(`.rank-box.filled[data-question="${currentQuestion}"]`).forEach(box => {
+                            const memberEl = box.querySelector(`.ranked-member[data-member-id="${draggedElement.dataset.memberId}"]`);
+                            if (memberEl) {
+                                removeFromRank(draggedElement.dataset.memberId, box.dataset.rank, currentQuestion);
+                            }
+                        });
+                    }
+                }
+
+                // Clean up
+                draggedElement.classList.remove('touch-dragging');
+                showMobileDragFeedback(false);
+                document.body.style.overflow = '';
+                removeMobileHighlights();
+                draggedElement = null;
+                currentQuestion = null;
+            }
+        }, { passive: false });
+
+        // Cancel drag on touch cancel
+        memberEl.addEventListener('touchcancel', function() {
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+
+            if (draggedElement) {
+                draggedElement.classList.remove('touch-dragging');
+                showMobileDragFeedback(false);
+                document.body.style.overflow = '';
+                removeMobileHighlights();
+                draggedElement = null;
+                currentQuestion = null;
+            }
+        });
+    });
+
+    // Also handle ranked members for moving them around
+    document.addEventListener('touchstart', function(e) {
+        const rankedMember = e.target.closest('.ranked-member');
+        if (!rankedMember || e.target.closest('.remove-member-btn')) return;
+
+        const rankBox = rankedMember.closest('.rank-box');
+        if (!rankBox) return;
+
+        touchTimeout = setTimeout(() => {
+            draggedElement = rankedMember;
+            currentQuestion = rankBox.dataset.question;
+            draggedElement.classList.add('touch-dragging');
+
+            // Show visual feedback
+            showMobileDragFeedback(true, rankedMember.querySelector('.small').textContent);
+
+            // Prevent scrolling during drag
+            document.body.style.overflow = 'hidden';
+        }, longPressDuration);
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!draggedElement) return;
+
+        if (draggedElement.classList.contains('ranked-member')) {
+            e.preventDefault();
+
+            // Move the feedback element to follow the touch
+            const touch = e.touches[0];
+            updateMobileDragPosition(touch.clientX, touch.clientY);
+
+            // Highlight potential drop targets
+            highlightDropTarget(touch.clientX, touch.clientY, currentQuestion);
+        }
+    }, { passive: false });
+
+    document.addEventListener('touchend', function(e) {
+        if (touchTimeout) {
+            clearTimeout(touchTimeout);
+            touchTimeout = null;
+        }
+
+        if (draggedElement && draggedElement.classList.contains('ranked-member')) {
+            e.preventDefault();
+
+            // Get the drop target
+            const touch = e.changedTouches[0];
+            const dropTarget = getDropTargetAt(touch.clientX, touch.clientY, currentQuestion);
+
+            if (dropTarget) {
+                const currentRankBox = draggedElement.closest('.rank-box');
+                const newRankBox = dropTarget.closest('.rank-box');
+
+                if (newRankBox && currentRankBox !== newRankBox) {
+                    // Move to a different rank
+                    const memberId = draggedElement.dataset.memberId;
+
+                    // First remove from current rank
+                    removeFromRank(memberId, currentRankBox.dataset.rank, currentQuestion);
+
+                    // Then assign to new rank
+                    assignRank(memberId, newRankBox.dataset.rank, currentQuestion);
+                }
+                else if (dropTarget.id.startsWith('unrankedContainer')) {
+                    // Move back to unranked container
+                    removeFromRank(draggedElement.dataset.memberId, currentRankBox.dataset.rank, currentQuestion);
+                }
+            }
+
+            // Clean up
+            draggedElement.classList.remove('touch-dragging');
+            showMobileDragFeedback(false);
+            document.body.style.overflow = '';
+            removeMobileHighlights();
+            draggedElement = null;
+            currentQuestion = null;
+        }
+    }, { passive: false });
+}
+
+// Helper function to find drop target at a specific position
+function getDropTargetAt(x, y, questionNumber) {
+    // Check if position is over a rank box for this question
+    const element = document.elementFromPoint(x, y);
+    if (!element) return null;
+
+    // Check if over a rank box
+    const rankBox = element.closest(`.rank-box[data-question="${questionNumber}"]`);
+    if (rankBox) return rankBox;
+
+    // Check if over the unranked container
+    const unrankedContainer = element.closest(`#unrankedContainer${questionNumber}`);
+    if (unrankedContainer) return unrankedContainer;
+
+    return null;
+}
+
+// Helper function to highlight potential drop targets
+function highlightDropTarget(x, y, questionNumber) {
+    // Remove all current highlights
+    removeMobileHighlights();
+
+    // Find element at position
+    const element = document.elementFromPoint(x, y);
+    if (!element) return;
+
+    // Check if it's a rank box for this question
+    const rankBox = element.closest(`.rank-box[data-question="${questionNumber}"]`);
+    if (rankBox) {
+        rankBox.classList.add('highlight');
+        return;
+    }
+
+    // Check if it's the unranked container
+    const unrankedContainer = element.closest(`#unrankedContainer${questionNumber}`);
+    if (unrankedContainer) {
+        unrankedContainer.classList.add('highlight');
+    }
+}
+
+// Remove all highlights
+function removeMobileHighlights() {
+    document.querySelectorAll('.rank-box.highlight, [id^="unrankedContainer"].highlight').forEach(el => {
+        el.classList.remove('highlight');
+    });
+}
+
+// Show/hide mobile drag feedback
+function showMobileDragFeedback(show, text = '') {
+    let feedback = document.getElementById('mobileDragFeedback');
+
+    if (show) {
+        if (!feedback) {
+            feedback = document.createElement('div');
+            feedback.id = 'mobileDragFeedback';
+            feedback.className = 'mobile-drag-feedback';
+            document.body.appendChild(feedback);
+        }
+
+        feedback.textContent = text;
+        feedback.style.display = 'block';
+    } else if (feedback) {
+        feedback.style.display = 'none';
+    }
+}
+
+// Update position of mobile drag feedback
+function updateMobileDragPosition(x, y) {
+    const feedback = document.getElementById('mobileDragFeedback');
+    if (feedback) {
+        feedback.style.left = `${x - (feedback.offsetWidth / 2)}px`;
+        feedback.style.top = `${y - (feedback.offsetHeight / 2)}px`;
+    }
+}
+
+function initDragAndDrop() {
+    // Set draggable attribute on all draggable member elements
+    document.querySelectorAll('.draggable-member').forEach(memberEl => {
+        memberEl.setAttribute('draggable', 'true');
+
+        // Prevent images and other elements from being dragged individually
+        memberEl.querySelectorAll('img, *').forEach(el => {
+            el.setAttribute('draggable', 'false');
+            el.addEventListener('dragstart', function(e) {
+                e.stopPropagation();
+            });
+        });
+
+        // Drag start event
+        memberEl.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', this.dataset.memberId);
+            this.classList.add('dragging');
+
+            // Add the question number to the data transfer
+            e.dataTransfer.setData('question', this.dataset.question);
+
+            // Create a custom drag image to prevent browser default behavior
+            const dragImage = document.createElement('div');
+            dragImage.classList.add('custom-drag-image');
+            dragImage.innerHTML = `<div class="p-2 bg-primary text-white rounded">${this.querySelector('.small').textContent}</div>`;
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            document.body.appendChild(dragImage);
+
+            e.dataTransfer.setDragImage(dragImage, 0, 0);
+
+            // Remove the drag image after a short delay
+            setTimeout(() => {
+                document.body.removeChild(dragImage);
+            }, 0);
+        });
+
+        // Drag end event
+        memberEl.addEventListener('dragend', function() {
+            this.classList.remove('dragging');
+        });
+    });
+
+    // Make rank boxes accept drops
+    document.querySelectorAll('.rank-box').forEach(rankBox => {
+        // Prevent default to allow drop
+        rankBox.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('highlight');
+        });
+
+        // Remove highlight when drag leaves
+        rankBox.addEventListener('dragleave', function() {
+            this.classList.remove('highlight');
+        });
+
+        // Handle drop event
+        rankBox.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('highlight');
+
+            const memberId = e.dataTransfer.getData('text/plain');
+            const questionNumber = e.dataTransfer.getData('question');
+            const rank = this.dataset.rank;
+
+            // Only process drop if question numbers match
+            if (questionNumber === this.dataset.question) {
+                assignRank(memberId, rank, questionNumber);
+            }
+        });
+    });
+
+    // Make unranked container droppable for moving items back
+    document.querySelectorAll('[id^="unrankedContainer"]').forEach(container => {
+        // Get question number from container ID
+        const questionMatch = container.id.match(/unrankedContainer(\d+)/);
+        if (!questionMatch) return;
+        const questionNumber = questionMatch[1];
+
+        // Add droppable functionality
+        container.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('highlight');
+        });
+
+        container.addEventListener('dragleave', function() {
+            this.classList.remove('highlight');
+        });
+
+        container.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('highlight');
+
+            // Find original member ID and rank
+            const memberId = e.dataTransfer.getData('text/plain');
+            const dropQuestionNumber = e.dataTransfer.getData('question');
+
+            // Only accept drops for the same question
+            if (dropQuestionNumber !== questionNumber) return;
+
+            // Find which rank box this member was in
+            let rank = null;
+            document.querySelectorAll(`.rank-box.filled[data-question="${questionNumber}"]`).forEach(box => {
+                const memberEl = box.querySelector(`.ranked-member[data-member-id="${memberId}"]`);
+                if (memberEl) {
+                    rank = box.dataset.rank;
+                }
+            });
+
+            // Only remove if we found the rank
+            if (rank) {
+                removeFromRank(memberId, rank, questionNumber);
+            }
+        });
+    });
+}
+
+    // Show modal to select which member to assign to a rank
+    function showMemberSelectionModal(questionNumber, rank) {
+        // Find all available members for this question
+        const members = [];
+        document.querySelectorAll(`.draggable-member[data-question="${questionNumber}"]`).forEach(memberEl => {
+            // Only include visible members (those not already assigned)
+            if (memberEl.style.display !== 'none') {
+                members.push({
+                    id: memberEl.dataset.memberId,
+                    name: memberEl.querySelector('.small')?.textContent || 'Member',
+                    photoUrl: memberEl.querySelector('img')?.src || null
+                });
+            }
+        });
+
+        // If no members are available, show message
+        if (members.length === 0) {
+            showAlert('info', 'No more members available to assign.');
+            return;
+        }
+
+        // Get existing member in this rank (if any)
+        const rankBox = document.querySelector(`.rank-box[data-rank="${rank}"][data-question="${questionNumber}"]`);
+        const existingMember = rankBox?.querySelector('.ranked-member');
+        const existingMemberId = existingMember?.dataset.memberId;
+
+        // Update modal title
+        const modal = document.getElementById('memberSelectionModal');
+        const modalTitle = modal.querySelector('.modal-title');
+
+        // Set appropriate title based on rank
+        let rankText = `Rank ${rank}`;
+        if (rank === 1) rankText = "First Place";
+        else if (rank === 2) rankText = "Second Place";
+        else if (rank === 3) rankText = "Third Place";
+
+        modalTitle.textContent = `Select Member for ${rankText}`;
+
+        // Populate member list
+        const memberList = document.getElementById('memberSelectionList');
+        memberList.innerHTML = '';
+
+        members.forEach(member => {
+            const isExisting = member.id === existingMemberId;
+
+            const listItem = document.createElement('button');
+            listItem.type = 'button';
+            listItem.className = 'list-group-item list-group-item-action d-flex align-items-center';
+
+            const photoHtml = member.photoUrl ?
+                `<img src="${member.photoUrl}" alt="${member.name}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">` :
+                `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                    <i class="feather icon-user text-secondary" style="font-size: 18px;"></i>
+                </div>`;
+
+            listItem.innerHTML = `
+                <div class="d-flex align-items-center flex-grow-1">
+                    ${photoHtml}
+                    <div>
+                        <div class="fw-medium">${member.name}</div>
+                    </div>
+                </div>
+                ${isExisting ? '<div class="badge bg-success ms-auto">Currently Assigned</div>' : ''}
+            `;
+
+            listItem.addEventListener('click', function() {
+                assignRank(member.id, rank, questionNumber);
+                bootstrap.Modal.getInstance(modal).hide();
+            });
+
+            memberList.appendChild(listItem);
+        });
+
+        // Show the modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+    }
+
+    // Show dialog for selecting which rank to assign a member to
+    function showMemberSelectionDialog(memberId, questionNumber) {
+        // Create or get the modal
+        let rankModal = document.getElementById('rankSelectionModal');
+        if (!rankModal) {
+            rankModal = document.createElement('div');
+            rankModal.id = 'rankSelectionModal';
+            rankModal.className = 'modal fade';
+            rankModal.setAttribute('tabindex', '-1');
+
+            rankModal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">Assign Rank</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <div class="list-group list-group-flush" id="rankOptionsList"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(rankModal);
+        }
+
+        // Get member details
+        const memberEl = document.querySelector(`.draggable-member[data-member-id="${memberId}"][data-question="${questionNumber}"]`);
+        const memberName = memberEl.querySelector('.small')?.textContent || 'Member';
+
+        // Get already assigned ranks
+        const assignedRanks = [];
+        document.querySelectorAll(`.rank-box.filled[data-question="${questionNumber}"]`).forEach(box => {
+            assignedRanks.push(parseInt(box.dataset.rank));
+        });
+
+        // Update modal title to show which member is being ranked
+        const modalTitle = rankModal.querySelector('.modal-title');
+        modalTitle.textContent = `Assign Rank to ${memberName}`;
+
+        // Clear and populate rank options
+        const optionsList = rankModal.querySelector('#rankOptionsList');
+        optionsList.innerHTML = '';
+
+        for (let i = 1; i <= maxRanks; i++) {
+            // Check if this rank is already assigned
+            const isAssigned = assignedRanks.includes(i);
+
+            let rankLabel = `Rank ${i}`;
+            if (i === 1) rankLabel = "First Place";
+            else if (i === 2) rankLabel = "Second Place";
+            else if (i === 3) rankLabel = "Third Place";
+
+            const rankItem = document.createElement('button');
+            rankItem.type = 'button';
+            rankItem.className = `list-group-item list-group-item-action d-flex align-items-center ${isAssigned ? 'disabled' : ''}`;
+
+            // Badge colors to match rank boxes
+            let badgeClass = 'bg-secondary';
+            if (i === 1) badgeClass = 'bg-warning';
+            else if (i === 2) badgeClass = 'bg-secondary';
+            else if (i === 3) badgeClass = 'bg-copper';
+            else if (i === 4) badgeClass = 'bg-success';
+            else if (i === 5) badgeClass = 'bg-info';
+
+            rankItem.innerHTML = `
+                <div class="me-3">
+                    <span class="badge ${badgeClass}" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        ${i}
+                    </span>
+                </div>
+                <div>
+                    <div class="fw-medium">${rankLabel}</div>
+                    ${isAssigned ? '<div class="text-muted small">Already assigned</div>' : ''}
+                </div>
+            `;
+
+            if (!isAssigned) {
+                rankItem.addEventListener('click', function() {
+                    assignRank(memberId, i, questionNumber);
+                    bootstrap.Modal.getInstance(rankModal).hide();
+                });
+            }
+
+            optionsList.appendChild(rankItem);
+        }
+
+        // Show the modal
+        const bsModal = new bootstrap.Modal(rankModal);
+        bsModal.show();
+    }
+
+    function assignRank(memberId, rank, questionNumber) {
+    // Find the rank box
+    const rankBox = document.querySelector(`.rank-box[data-rank="${rank}"][data-question="${questionNumber}"]`);
+    if (!rankBox) return;
+
+    // If there's already a member in this rank, move them back to unranked
+    const existingMember = rankBox.querySelector('.ranked-member');
+    if (existingMember) {
+        const existingMemberId = existingMember.dataset.memberId;
+        // Show original member back in unranked area
+        const originalMember = document.querySelector(`.draggable-member[data-member-id="${existingMemberId}"][data-question="${questionNumber}"]`);
+        if (originalMember) {
+            originalMember.style.display = 'block';
+        }
+
+        // Remove from rank box
+        existingMember.remove();
+    }
+
+    // Clear the rank member container
+    const container = rankBox.querySelector('.rank-member-container');
+    container.innerHTML = '';
+
+    // Find the member element
+    const memberEl = document.querySelector(`.draggable-member[data-member-id="${memberId}"][data-question="${questionNumber}"]`);
+    if (!memberEl) return;
+
+    // Create a simplified clone of the member element
+    const memberClone = memberEl.cloneNode(true);
+    memberClone.style.display = 'block';
+    memberClone.classList.remove('draggable-member');
+    memberClone.classList.add('ranked-member');
+    memberClone.dataset.memberId = memberId; // Ensure member ID is retained
+    memberClone.setAttribute('draggable', 'true'); // Make ranked members draggable
+
+    // Remove any extra styling/elements to make it more compact
+    memberClone.style.boxShadow = 'none';
+    memberClone.style.border = 'none';
+
+    // Add drag events to ranked member
+    memberClone.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('text/plain', this.dataset.memberId);
+        e.dataTransfer.setData('question', questionNumber);
+        this.classList.add('dragging');
+    });
+
+    memberClone.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+    });
+
+    // Replace triple dot menu with a small remove button
+    const menuToggle = memberClone.querySelector('.member-menu-toggle');
+    if (menuToggle) {
+        menuToggle.outerHTML = `
+            <div class="remove-member-btn">
+                <i class="feather icon-x text-danger"></i>
+            </div>
+        `;
+
+        // Add event listener to the remove button
+        setTimeout(() => {
+            const removeBtn = memberClone.querySelector('.remove-member-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent triggering other events
+                    removeFromRank(memberId, rank, questionNumber);
+                });
+            }
+        }, 0);
+    }
+
+    // Add to rank box
+    container.appendChild(memberClone);
+    rankBox.classList.add('filled');
+
+    // Hide original member in the unranked container
+    memberEl.style.display = 'none';
+
+    // Update rankings object for this question - no auto-submission
+    updateRankingsObject(questionNumber);
+}
+
+
+    function removeFromRank(memberId, rank, questionNumber) {
+        // Find the rank box
+        const rankBox = document.querySelector(`.rank-box[data-rank="${rank}"][data-question="${questionNumber}"]`);
+        if (!rankBox) return;
+
+        // Clear the member from this rank
+        const container = rankBox.querySelector('.rank-member-container');
+        container.innerHTML = '';
+        rankBox.classList.remove('filled');
+
+        // Show the original member in the unranked container
+        const memberEl = document.querySelector(`.draggable-member[data-member-id="${memberId}"][data-question="${questionNumber}"]`);
+        if (memberEl) {
+            memberEl.style.display = 'block';
+        }
+
+        // Update rankings object for this question
+        updateRankingsObject(questionNumber);
+    }
+
+    function updateRankingsObject(questionNumber) {
+        // Get all filled rank boxes for this question
+        const filledBoxes = document.querySelectorAll(`.rank-box.filled[data-question="${questionNumber}"]`);
+
+        // Collect rankings
+        const rankings = {};
+
+        filledBoxes.forEach(box => {
+            const rank = box.dataset.rank;
+            const memberEl = box.querySelector('.ranked-member');
+            if (memberEl) {
+                rankings[`rank${rank}`] = memberEl.dataset.memberId;
+            }
+        });
+
+        // Store the rankings for this question
+        window.questionRankings = window.questionRankings || {};
+        window.questionRankings[questionNumber] = rankings;
+
+        // Update next button status
+        updateNextButtonStatus(questionNumber);
+    }
+
+    function updateNextButtonStatus(questionNumber) {
+        // Only enable next/finish button if all ranks are filled OR question was skipped
+        const skipClicked = sessionStorage.getItem(`question${questionNumber}_skipped`) === 'true';
+        const filledBoxCount = document.querySelectorAll(`.rank-box.filled[data-question="${questionNumber}"]`).length;
+        const allFilled = filledBoxCount === maxRanks;
+
+        // Enable/disable next button based on state
+        const nextBtn = document.querySelector(`.next-question-button[data-question="${questionNumber}"]`);
+        const finishBtn = document.querySelector(`.finish-button[data-question="${questionNumber}"]`);
+
+        if (nextBtn) {
+            nextBtn.disabled = !(allFilled || skipClicked);
+        }
+
+        if (finishBtn) {
+            finishBtn.disabled = !(allFilled || skipClicked);
+        }
+    }
+
+    // Updated setup for request voting button
+    function setupRequestVoting() {
+        const form = document.getElementById('requestVotingForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const button = document.getElementById('requestVotingBtn');
+                button.disabled = true;
+                button.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Sending Request...';
+
+                fetch(`/slot/${slotId}/room/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: new URLSearchParams({
+                        'action': 'request_voting'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        button.innerHTML = '<i class="feather icon-check me-2"></i>Voting Request Sent';
+                        document.getElementById('requestStatusText').textContent = 'Voting request has been sent';
+                    } else {
+                        button.disabled = false;
+                        button.innerHTML = '<i class="feather icon-play-circle me-2"></i>Request Voting for My Group';
+                        showAlert('danger', 'Error sending request: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error sending voting request:', error);
+                    button.disabled = false;
+                    button.innerHTML = '<i class="feather icon-play-circle me-2"></i>Request Voting for My Group';
+                    showAlert('danger', 'Error sending request. Please try again.');
+                });
+            });
+        }
+    }
+
+    // UPDATED NAVIGATION BUTTONS WITH SUBMISSION ON NEXT
+    function setupNavigationButtons() {
+        // Next question buttons
+        document.querySelectorAll('.next-question-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const questionIndex = parseInt(this.dataset.question);
+                const nextQuestion = questionIndex + 1;
+
+                // Submit rankings for the current question first
+                submitRankingsForQuestion(questionIndex)
+                    .then(() => {
+                        // Then navigate to next question
+                        const currentQuestionEl = document.querySelector(`.question-item[data-question-index="${questionIndex}"]`);
+                        const nextQuestionEl = document.querySelector(`.question-item[data-question-index="${nextQuestion}"]`);
+
+                        if (currentQuestionEl && nextQuestionEl) {
+                            currentQuestionEl.classList.remove('active');
+                            currentQuestionEl.classList.add('d-none');
+                            nextQuestionEl.classList.remove('d-none');
+                            nextQuestionEl.classList.add('active');
+
+                            // Update current question
+                            currentQuestion = nextQuestion;
+                            // Shuffle the members in the next question's unranked container
+                            shuffleUnrankedMembers(nextQuestion);
+
+                            // Send AJAX request to update progress
+                            fetch(`/slot/${slotId}/room/`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'X-CSRFToken': csrfToken
+                                },
+                                body: new URLSearchParams({
+                                    'action': 'next_question',
+                                    'current_question': questionIndex
+                                })
+                            })
+                            .catch(error => {
+                                console.error('Error updating question progress:', error);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error submitting rankings before navigation:', error);
+                        showAlert('danger', 'Error submitting rankings. Please try again.');
+                    });
+            });
+        });
+
+        // Finish button
+        document.querySelectorAll('.finish-button').forEach(button => {
+    button.addEventListener('click', function() {
+        const questionIndex = parseInt(this.dataset.question);
+        const participantId = document.getElementById('participantId').value;
+
+        // Submit rankings for final question first
+        submitRankingsForQuestion(questionIndex)
+            .then(() => {
+                // Then complete voting
+                fetch(`/slot/${slotId}/room/?group=${encodeURIComponent(groupName)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: new URLSearchParams({
+                        'action': 'complete_voting',
+                        'participant_id': participantId  // Add participant ID
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Hide questions and show waiting container
+                        document.getElementById('questionsContainer').classList.add('d-none');
+                        document.getElementById('waitingContainer').classList.remove('d-none');
+
+                        showAlert('success', 'Voting completed successfully!');
+                    } else {
+                        showAlert('danger', 'Error completing voting: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error completing voting:', error);
+                    showAlert('danger', 'Error completing voting. Please try again.');
+                });
+            })
+            .catch(error => {
+                console.error('Error submitting rankings before finishing:', error);
+                showAlert('danger', 'Error submitting rankings. Please try again.');
+            });
+    });
+});
+    }
+
+
+function shuffleUnrankedMembers(questionNumber) {
+    const container = document.getElementById(`unrankedContainer${questionNumber}`);
+    if (!container) return;
+
+    // Get all visible draggable members
+    const members = Array.from(container.querySelectorAll('.draggable-member'))
+        .filter(member => member.style.display !== 'none');
+
+    // If there are no members to shuffle, return
+    if (members.length <= 1) return;
+
+    // Detach all members from DOM
+    const memberElements = members.map(member => {
+        const element = member;
+        if (element.parentNode) {
+            element.parentNode.removeChild(element);
+        }
+        return element;
+    });
+
+    // Shuffle array using Fisher-Yates algorithm
+    for (let i = memberElements.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [memberElements[i], memberElements[j]] = [memberElements[j], memberElements[i]];
+    }
+
+    // Append all members back in shuffled order
+    memberElements.forEach(member => {
+        container.appendChild(member);
+    });
+}
+
+    /* ADD THIS TO YOUR EXISTING addDragDropStyles FUNCTION */
+
+function addDragDropStyles() {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+        /* Prevent image dragging */
+        .draggable-member img,
+        .ranked-member img {
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+            pointer-events: none;
+        }
+
+        /* Drag and drop styles - removed blue highlight */
+        .draggable-member.dragging,
+        .draggable-member.touch-dragging {
+            opacity: 0.95;
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            z-index: 1000;
+            position: relative;
+        }
+
+        .ranked-member.dragging,
+        .ranked-member.touch-dragging {
+            opacity: 0.95;
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            z-index: 1000;
+            position: relative;
+        }
+
+        .rank-box.highlight {
+            transform: scale(1.05);
+            border-style: dashed;
+            border-width: 3px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        [id^="unrankedContainer"].highlight {
+            background-color: rgba(0, 0, 0, 0.05);
+            border: 2px dashed rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        /* Mobile drag feedback */
+        .mobile-drag-feedback {
+            position: absolute;
+            z-index: 9999;
+            background: rgba(70, 70, 70, 0.9);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            pointer-events: none;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            max-width: 200px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border: 2px solid white;
+        }
+
+        /* Custom drag image for desktop */
+        .custom-drag-image {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* Compact rank box styles */
+        .rank-box {
+            border: 2px dashed #dee2e6;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            height: 120px; /* Increased height */
+            width: 110px; /* Increased width */
+            min-height: 120px;
+            min-width: 110px;
+            max-width: 110px;
+            max-height: 120px;
+            margin: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            position: relative;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Fix rank box label positioning */
+        .rank-box .rank-label {
+            font-size: 0.75rem;
+            margin-top: 2px;
+            margin-bottom: 2px;
+            padding: 0;
+            line-height: 1;
+            height: auto;
+        }
+
+        /* Make rankings container scrollable */
+        [id^="rankingsContainer"] {
+            display: flex;
+            flex-wrap: nowrap !important;
+            gap: 12px;
+            overflow-x: auto !important;
+            overflow-y: hidden;
+            white-space: nowrap;
+            padding: 0.5rem;
+            padding-bottom: 12px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scroll-behavior: smooth;
+        }
+
+        /* Compact member styling */
+        .draggable-member {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin-right: 12px;
+            position: relative;
+            flex-shrink: 0;
+            min-width: 70px !important;
+            max-width: 70px !important;
+        }
+
+        /* Clean styled ranked member - NO container or background */
+        .ranked-member {
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 auto !important;
+            position: relative;
+            flex-shrink: 0;
+            min-width: 60px !important;
+            max-width: 60px !important;
+        }
+
+        /* Make profile images larger and consistent */
+        .draggable-member img, .draggable-member .rounded-circle {
+            width: 65px !important;
+            height: 65px !important;
+            object-fit: cover;
+            margin-bottom: 0.25rem !important;
+            border: 1px solid #e9ecef;
+        }
+
+        /* Larger images for ranked members */
+        .ranked-member img, .ranked-member .rounded-circle {
+            width: 55px !important;
+            height: 55px !important;
+            object-fit: cover;
+            margin-bottom: 0.25rem !important;
+            border: none !important; /* Removed border */
+        }
+
+        /* Make names smaller and position below image */
+        .draggable-member .small {
+            font-size: 11px !important;
+            max-width: 65px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .ranked-member .small {
+            font-size: 9px !important;
+            max-width: 55px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+            text-align: center;
+            line-height: 1;
+            margin-top: 0;
+        }
+
+        /* Position menu toggle and remove button */
+        .member-menu-toggle {
+            position: absolute !important;
+            top: -2px !important;
+            right: -2px !important;
+            width: 20px !important;
+            height: 20px !important;
+            font-size: 12px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 50% !important;
+            background-color: white !important;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3) !important;
+            z-index: 5;
+            border: 1px solid #adb5bd !important;
+        }
+
+        /* Minimalist remove button */
+        .remove-member-btn {
+            position: absolute !important;
+            top: 0px !important;
+            right: 0px !important;
+            width: 18px !important;
+            height: 18px !important;
+            font-size: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 50% !important;
+            background-color: white !important;
+            box-shadow: none !important;
+            z-index: 5;
+            border: 1px solid #dc3545 !important;
+        }
+
+        /* Style for remove button */
+        .remove-member-btn i {
+            font-size: 10px !important;
+            color: #dc3545;
+        }
+
+        /* Make scrollable container for unranked members */
+        .scrollable-container {
+            padding: 0.5rem !important;
+            display: flex;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            overflow-y: hidden;
+            white-space: nowrap;
+            gap: 12px;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            padding-bottom: 12px;
+        }
+
+        /* Compact rank member container - NO styling */
+        .rank-member-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            max-width: 60px;
+            margin: 0 auto;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible;
+        }
+
+        /* Empty text in rank box */
+        .rank-box .empty-state-text {
+            font-size: 0.6rem;
+            opacity: 0.6;
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .rank-box .empty-state-text i {
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        /* Make the rank area layout better on mobile */
+        @media (max-width: 768px) {
+            .rank-box {
+                height: 110px;
+                width: 100px;
+                min-height: 110px;
+                min-width: 100px;
+                max-width: 100px;
+                max-height: 110px;
+                margin: 0.25rem;
+                padding: 0.4rem;
+            }
+
+            /* Keep draggable members visible during drag on mobile */
+            .draggable-member.dragging,
+            .draggable-member.touch-dragging,
+            .ranked-member.dragging,
+            .ranked-member.touch-dragging {
+                opacity: 1;
+                transform: scale(1.05);
+                z-index: 1000;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            }
+
+            /* Make mobile drag feedback more prominent */
+            .mobile-drag-feedback {
+                font-size: 18px;
+                padding: 15px 20px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+                border: 2px solid white;
+            }
+
+            /* Adjust flex wrapping for rank boxes */
+            [id^="rankingsContainer"] {
+                justify-content: flex-start;
+                gap: 10px;
+            }
+
+            /* Reduce size of rank number */
+            .rank-box .rank-number {
+                width: 30px;
+                height: 30px;
+                font-size: 1.2rem;
+                top: -10px;
+            }
+
+            /* Make member photo visible during drag */
+            .draggable-member.dragging img,
+            .draggable-member.touch-dragging img,
+            .ranked-member.dragging img,
+            .ranked-member.touch-dragging img {
+                opacity: 1 !important;
+            }
+
+            /* Maintain larger ranked member size for mobile */
+            .ranked-member img, .ranked-member .rounded-circle {
+                width: 50px !important;
+                height: 50px !important;
+            }
+
+            .ranked-member {
+                min-width: 52px !important;
+                max-width: 52px !important;
+            }
+
+            .ranked-member .small {
+                font-size: 8px !important;
+                max-width: 50px;
+            }
+        }
+    `;
+    document.head.appendChild(styleEl);
+}
+
+
+// Submit rankings function with improved slot/group handling
+function submitRankingsForQuestion(questionIndex) {
+    // Get stored rankings for this question
+    const rankings = window.questionRankings[questionIndex] || {};
+    const participantId = document.getElementById('participantId').value;
+
+    // Record start time for minimum display time calculation
+    const submitStartTime = new Date().getTime();
+
+    // If question was skipped, handle accordingly
+    const skipClicked = sessionStorage.getItem(`question${questionIndex}_skipped`) === 'true';
+
+    // Get the current group name and slot ID from the page - CRITICAL for correct saving
+    const groupName = document.getElementById('groupName')?.value || '';
+    const slotId = document.getElementById('slotId')?.value || '';
+
+    // Add debugging to confirm correct parameters
+    console.log(`Submitting rankings for question ${questionIndex}, slot ${slotId}, group ${groupName}`);
+
+    // Find the current question item element
+    const questionItem = document.querySelector(`.question-item[data-question-index="${questionIndex}"]`);
+    if (!questionItem) return Promise.reject(new Error("Question element not found"));
+
+    // Add CSS styles for the loading overlay if not already added
+    if (!document.getElementById('voteLoadingStyles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'voteLoadingStyles';
+        styleEl.textContent = `
+            .vote-loading-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(255, 255, 255, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                border-radius: 0.5rem;
+                backdrop-filter: blur(3px);
+            }
+
+            .vote-loading-content {
+                background-color: white;
+                border-radius: 10px;
+                padding: 2rem;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                text-align: center;
+                max-width: 80%;
+                position: relative;
+            }
+
+            .vote-spinner {
+                border: 4px solid rgba(0, 123, 255, 0.1);
+                border-radius: 50%;
+                border-top: 4px solid #0d6efd;
+                width: 50px;
+                height: 50px;
+                animation: vote-spin 1s linear infinite;
+                margin: 0 auto 1rem auto;
+            }
+
+            .vote-loading-text {
+                font-size: 1.2rem;
+                color: #333;
+                margin-bottom: 0.5rem;
+            }
+
+            @keyframes vote-spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(styleEl);
+    }
+
+    // Create and show loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'vote-loading-overlay';
+    loadingOverlay.innerHTML = `
+        <div class="vote-loading-content">
+            <div class="vote-spinner-container">
+                <div class="vote-spinner"></div>
+            </div>
+            <div class="vote-loading-text">Submitting your votes...</div>
+        </div>
+    `;
+    questionItem.appendChild(loadingOverlay);
+
+    // Disable next/finish button during submission
+    const nextBtn = questionItem.querySelector('.next-question-button');
+    const finishBtn = questionItem.querySelector('.finish-button');
+    if (nextBtn) nextBtn.disabled = true;
+    if (finishBtn) finishBtn.disabled = true;
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('action', 'submit_rankings');
+    formData.append('question_index', questionIndex);
+    formData.append('participant_id', participantId);
+    formData.append('group', groupName); // Explicitly include group name
+    formData.append('slot_id', slotId); // Explicitly include slot ID as well
+
+    // Add rankings
+    Object.keys(rankings).forEach(key => {
+        formData.append(key, rankings[key]);
+    });
+
+    // If skipping, add that flag
+    if (skipClicked) {
+        formData.append('is_skipping', 'true');
+    }
+
+    // Get CSRF token from the dedicated hidden input or meta tag
+    const csrfToken = document.getElementById('csrfToken')?.value ||
+                     document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                     document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+
+    // Send AJAX request with explicit group name in URL
+    return fetch(`/slot/${slotId}/room/?group=${encodeURIComponent(groupName)}`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        },
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        // First check if the response is OK
+        if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+        }
+
+        // Check content type to avoid parsing HTML as JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        } else {
+            throw new Error('Received non-JSON response from server');
+        }
+    })
+    .then(data => {
+        // Record the timestamp when we received the response
+        const responseTime = new Date().getTime();
+        // Calculate how long we've been showing the loading state
+        const loadingDuration = responseTime - submitStartTime;
+        // Calculate additional time needed to meet our minimum display time
+        const additionalWait = Math.max(0, 500 - loadingDuration);
+
+        // Wait for minimum display time before processing response
+        return new Promise(resolve => {
+            setTimeout(() => resolve(data), additionalWait);
+        });
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            // Verify response is for the correct slot/group (if provided in response)
+            if (data.slot_id && data.group_name) {
+                if (data.slot_id !== slotId || data.group_name !== groupName) {
+                    console.error("Response was for wrong slot/group combination");
+                    throw new Error(`Response was for slot ${data.slot_id}, group ${data.group_name} instead of slot ${slotId}, group ${groupName}`);
+                }
+            }
+
+            // Show success state in the loading overlay
+            loadingOverlay.querySelector('.vote-spinner-container').innerHTML =
+                '<i class="feather icon-check-circle" style="color: #198754; font-size: 50px;"></i>';
+            loadingOverlay.querySelector('.vote-loading-text').textContent = 'Votes submitted successfully!';
+
+            // Hide the overlay after a delay (showing success message)
+            setTimeout(() => {
+                if (loadingOverlay.parentNode) {
+                    loadingOverlay.parentNode.removeChild(loadingOverlay);
+                }
+
+                // Re-enable next/finish button after success
+                if (nextBtn) nextBtn.disabled = false;
+                if (finishBtn) finishBtn.disabled = false;
+
+                // Show success message in the question message element
+                const msgEl = document.getElementById(`questionMessage${questionIndex}`);
+                if (msgEl) {
+                    msgEl.textContent = 'Rankings submitted successfully!';
+                    msgEl.style.display = 'block';
+                    setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+                }
+            }, 1500);
+
+            console.log(`Successfully saved rankings for question ${questionIndex}, slot ${slotId}, group ${groupName}`);
+            return data;
+        } else {
+            // Show error state in the loading overlay
+            loadingOverlay.querySelector('.vote-spinner-container').innerHTML =
+                '<i class="feather icon-alert-triangle" style="color: #dc3545; font-size: 50px;"></i>';
+            loadingOverlay.querySelector('.vote-loading-text').textContent =
+                data.message || 'Error submitting rankings. Please try again.';
+
+            // Add a close button for error state
+            const closeBtn = document.createElement('button');
+            closeBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #6c757d;';
+            closeBtn.innerHTML = '<i class="feather icon-x"></i>';
+            closeBtn.addEventListener('click', () => {
+                if (loadingOverlay.parentNode) {
+                    loadingOverlay.parentNode.removeChild(loadingOverlay);
+                }
+
+                // Re-enable next/finish button after closing error message
+                if (nextBtn) nextBtn.disabled = false;
+                if (finishBtn) finishBtn.disabled = false;
+            });
+
+            loadingOverlay.querySelector('.vote-loading-content').appendChild(closeBtn);
+
+            showAlert('danger', 'Error submitting rankings: ' + data.message);
+            throw new Error(data.message);
+        }
+    })
+    .catch(error => {
+        console.error(`Error submitting rankings for question ${questionIndex}, slot ${slotId}, group ${groupName}:`, error);
+
+        // Update loading overlay to show error
+        if (loadingOverlay.parentNode) {
+            loadingOverlay.querySelector('.vote-spinner-container').innerHTML =
+                '<i class="feather icon-alert-triangle" style="color: #dc3545; font-size: 50px;"></i>';
+            loadingOverlay.querySelector('.vote-loading-text').textContent =
+                'Error submitting rankings. Please try again.';
+
+            // Add a close button if there isn't one already
+            if (!loadingOverlay.querySelector('button')) {
+                const closeBtn = document.createElement('button');
+                closeBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #6c757d;';
+                closeBtn.innerHTML = '<i class="feather icon-x"></i>';
+                closeBtn.addEventListener('click', () => {
+                    if (loadingOverlay.parentNode) {
+                        loadingOverlay.parentNode.removeChild(loadingOverlay);
+                    }
+
+                    // Re-enable next/finish button after closing error message
+                    if (nextBtn) nextBtn.disabled = false;
+                    if (finishBtn) finishBtn.disabled = false;
+                });
+
+                loadingOverlay.querySelector('.vote-loading-content').appendChild(closeBtn);
+            }
+        }
+
+        showAlert('danger', 'Error submitting rankings. Please try again.');
+        return Promise.reject(error);
+    });
+}
+
+
+    // RENAME ABSENCE BUTTONS TO SKIP QUESTION
+    function setupSkipButtons() {
+        // Rename all "Mark as absent" buttons to "Skip this Question"
+        document.querySelectorAll('.mark-absent-btn').forEach(button => {
+            button.className = 'btn btn-outline-secondary skip-question-btn';
+            button.innerHTML = '<i class="feather icon-skip-forward me-2"></i>Skip This Question';
+
+            // Update event listener
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+
+            newButton.addEventListener('click', function() {
+                if (!confirm('Are you sure you want to skip this question?')) {
+                    return;
+                }
+
+                const questionIndex = parseInt(this.dataset.question);
+
+                // Mark this question as skipped in session storage
+                sessionStorage.setItem(`question${questionIndex}_skipped`, 'true');
+
+                // Enable the next/finish button
+                updateNextButtonStatus(questionIndex);
+
+                // Show confirmation message
+                showAlert('info', 'Question skipped. You can now proceed to the next question.');
+            });
+        });
+    }
+
+    function startStatusPolling() {
+    // Poll for status updates every 10 seconds (increased to reduce flickering)
+    const pollInterval = setInterval(checkStatus, 10000);
+
+    // Initial check
+    checkStatus();
+
+    // Cleanup polling when page is unloaded
+    window.addEventListener('beforeunload', function() {
+        clearInterval(pollInterval);
+    });
+}
+
+
+
+function updatePageBasedOnStatus(data) {
+    // Get references to all containers
+    const resultsContainer = document.getElementById('resultsContainer');
+    const waitingContainer = document.getElementById('waitingContainer');
+    const questionsContainer = document.getElementById('questionsContainer');
+    const startSpeakingContainer = document.getElementById('startSpeakingContainer');
+
+    // First, hide all containers
+    if (resultsContainer) resultsContainer.classList.add('d-none');
+    if (waitingContainer) waitingContainer.classList.add('d-none');
+    if (questionsContainer) questionsContainer.classList.add('d-none');
+    if (startSpeakingContainer) startSpeakingContainer.classList.add('d-none');
+
+    // Use voting_status to determine which container to show
+    if (data.results_published) {
+        // Special case: results published overrides everything
+        if (resultsContainer) resultsContainer.classList.remove('d-none');
+    } else if (data.voting_status === 'finished') {
+        // User has finished voting - show waiting container
+        if (waitingContainer) waitingContainer.classList.remove('d-none');
+    } else if (data.voting_status === 'in_progress') {
+        // User is in voting process - show questions container
+        if (questionsContainer) questionsContainer.classList.remove('d-none');
+    } else {
+        // Default (not_started) - show starting container
+        if (startSpeakingContainer) startSpeakingContainer.classList.remove('d-none');
+    }
+
+    // Update request voting button status
+    if (data.request_voting_status === 'request') {
+        const button = document.getElementById('requestVotingBtn');
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="feather icon-check me-2"></i>Voting Request Sent';
+        }
+
+        // Update request status text if it exists
+        const statusText = document.getElementById('requestStatusText');
+        if (statusText) {
+            statusText.textContent = 'Voting request has been sent. Waiting for approval...';
+        }
+    }
+
+    // Update current question if in voting process
+    if (data.voting_status === 'in_progress' && data.current_question) {
+        // Hide all question items first
+        document.querySelectorAll('.question-item').forEach(item => {
+            item.classList.add('d-none');
+            item.classList.remove('active');
+        });
+
+        // Show current question
+        const currentQuestionEl = document.querySelector(`.question-item[data-question-index="${data.current_question}"]`);
+        if (currentQuestionEl) {
+            currentQuestionEl.classList.remove('d-none');
+            currentQuestionEl.classList.add('active');
+        }
+    }
+}
+
+    function updateRankingsTable(rankedMembers, userRank, userMark) {
+        const tableBody = document.getElementById('rankingsTableBody');
+        if (!tableBody) return;
+
+        tableBody.innerHTML = '';
+
+        rankedMembers.forEach((member, index) => {
+            const rank = index + 1;
+            const isCurrentUser = member.is_current_user;
+
+            let rankIcon = '';
+            if (rank === 1) {
+                rankIcon = `<div class="rounded-circle bg-warning d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                <i class="feather icon-award text-white"></i>
+                            </div>`;
+            } else if (rank === 2) {
+                rankIcon = `<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                <i class="feather icon-award text-white"></i>
+                            </div>`;
+            } else if (rank === 3) {
+                rankIcon = `<div class="rounded-circle bg-copper d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                <i class="feather icon-award text-white"></i>
+                            </div>`;
+            } else {
+                rankIcon = `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                                <span class="fw-bold">${rank}</span>
+                            </div>`;
+            }
+
+            const rankSuffix = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
+
+            const photoHtml = member.photo_url ?
+                `<img src="${member.photo_url}" alt="${member.name}" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover;">` :
+                `<div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 30px; height: 30px;">
+                    <i class="feather icon-user text-secondary"></i>
+                </div>`;
+
+            const row = document.createElement('tr');
+            if (isCurrentUser) row.className = 'table-primary';
+
+            row.innerHTML = `
+                <td class="text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        ${rankIcon}
+                        <span>${rank}${rankSuffix}</span>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <div class="d-flex align-items-center justify-content-center">
+                        ${photoHtml}
+                        <span>${member.name}</span>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <span class="fw-bold">${member.mark}</span>
+                </td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+
+        // Update user result message
+        const userResultMessage = document.getElementById('userResultMessage');
+        if (userResultMessage) {
+            let messageHtml = '';
+
+            if (userRank && userRank <= maxRanks) {
+                const rankSuffix = userRank === 1 ? 'st' : userRank === 2 ? 'nd' : userRank === 3 ? 'rd' : 'th';
+
+                if (userRank === 1) {
+                    messageHtml = `<h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                  <p class="mb-0 h5">You secured <span class="text-warning fw-bold">1st Place</span> with ${userMark} points!</p>`;
+                } else if (userRank === 2) {
+                    messageHtml = `<h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                  <p class="mb-0 h5">You secured <span class="text-secondary fw-bold">2nd Place</span> with ${userMark} points!</p>`;
+                } else if (userRank === 3) {
+                    messageHtml = `<h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                  <p class="mb-0 h5">You secured <span class="text-copper fw-bold">3rd Place</span> with ${userMark} points!</p>`;
+                } else {
+                    messageHtml = `<h4 class="mb-2 text-warning fw-bold">Congratulations!</h4>
+                                  <p class="mb-0 h5">You secured <span class="text-primary fw-bold">${userRank}${rankSuffix} Place</span> with ${userMark} points!</p>`;
+                }
+            } else {
+                messageHtml = `<h4 class="mb-2 text-secondary">Better luck next time!</h4>
+                              <p class="mb-0 h5">You earned ${userMark} points.</p>`;
+            }
+
+            userResultMessage.innerHTML = messageHtml;
+        }
+    }
+
+    function showAlert(type, message) {
+        const alertEl = document.getElementById('statusAlert');
+        const messageEl = document.getElementById('statusAlertMessage');
+
+        if (!alertEl || !messageEl) {
+            // If alert elements don't exist, create them
+            const alertsContainer = document.getElementById('statusAlerts') || document.createElement('div');
+            if (!alertsContainer.id) {
+                alertsContainer.id = 'statusAlerts';
+                document.querySelector('.container')?.prepend(alertsContainer);
+            }
+
+            const newAlert = document.createElement('div');
+            newAlert.id = 'statusAlert';
+            newAlert.className = `alert alert-${type} alert-dismissible fade show`;
+            newAlert.innerHTML = `
+                <span id="statusAlertMessage">${message}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+
+            alertsContainer.appendChild(newAlert);
+
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                newAlert.remove();
+            }, 5000);
+
+            return;
+        }
+
+        // Update existing alert
+        alertEl.className = `alert alert-${type} alert-dismissible fade show`;
+        messageEl.textContent = message;
+        alertEl.classList.remove('d-none');
+
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+            alertEl.classList.add('d-none');
+        }, 5000);
+    }
+
+
+    function checkStatus() {
+    // Add the current group name and timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const groupName = document.getElementById('groupName')?.value || '';
+
+    fetch(`/slot/${slotId}/room/?action=status_update&group=${encodeURIComponent(groupName)}&_=${timestamp}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+        },
+        cache: 'no-store'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // CRITICAL: Verify response is for THIS user and THIS group
+            const currentGroupName = document.getElementById('groupName')?.value || '';
+
+            // If the response data doesn't match our current group, IGNORE IT
+            if (data.group_name !== currentGroupName) {
+                console.error("Received status for wrong group - ignoring update");
+                return;
+            }
+
+            // If there's a redirect URL and results are published, use it
+            if (data.redirect_url && data.results_published) {
+                console.log("Redirecting to results page:", data.redirect_url);
+                window.location.href = data.redirect_url;
+                return; // Stop further processing
+            }
+
+            // Otherwise update the page based on status
+            updatePageBasedOnStatus(data);
+        }
+    })
+    .catch(error => {
+        console.error('Error checking status:', error);
+    });
+}
+
+});
+
+</script>
+{% endblock content %}
+</body>
+</html>
