@@ -194,8 +194,11 @@ Admin panel at  https://127.0.0.1:8000/admin
   </div>
 </div>
 
-## 📧 Support
 
+---
+## Demo
+![Watch Demo Video](git-images/gd1.gif) Voting
+## 📧 Support
 For assistance with the **Smart Group Discussion Platform**, contact us:
 
 <div style="text-align: left;">
