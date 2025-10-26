@@ -14,3 +14,5 @@ package.json
 Procfile
 README_branching.md
 build.sh
+nginx
+node_modules
