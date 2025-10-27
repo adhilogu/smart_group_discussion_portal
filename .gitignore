@@ -14,5 +14,6 @@ Procfile
 README_branching.md
 build.sh
 db.sqlite3
+.DS_Store
 nginx/
 node_modules/
