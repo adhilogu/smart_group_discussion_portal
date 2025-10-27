@@ -1,6 +1,6 @@
 
 .env
-secrets/
+secret/
 cert.crt
 cert.key
 docker-compose.yml
@@ -13,5 +13,6 @@ package.json
 Procfile
 README_branching.md
 build.sh
-nginx
-node_modules
+db.sqlite3
+nginx/
+node_modules/
